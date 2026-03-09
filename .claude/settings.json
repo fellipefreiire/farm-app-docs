@@ -1,0 +1,64 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(*)",
+      "Write(*)",
+      "Edit(*)",
+      "Glob(*)",
+      "Grep(*)",
+      "WebSearch(*)",
+      "WebFetch(*)",
+      "Agent(*)",
+
+      "Bash(pnpm *)",
+      "Bash(tsc *)",
+      "Bash(stryker *)",
+
+      "Bash(git status *)",
+      "Bash(git log *)",
+      "Bash(git diff *)",
+      "Bash(git branch)",
+      "Bash(git branch -a)",
+      "Bash(git branch -d *)",
+      "Bash(git checkout -b *)",
+      "Bash(git switch *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push origin *)",
+      "Bash(git push -u origin *)",
+      "Bash(git pull *)",
+      "Bash(git fetch *)",
+      "Bash(git merge *)",
+      "Bash(git stash *)",
+
+      "Bash(gh issue *)",
+      "Bash(gh pr *)",
+      "Bash(gh repo *)",
+      "Bash(gh auth status)",
+
+      "Bash(mkdir *)",
+      "Bash(ln -s *)",
+      "Bash(rm docs/plans/*)",
+      "Bash(cat *)",
+      "Bash(wc *)",
+      "Bash(ls *)"
+    ],
+    "deny": [
+      "Bash(git reset --hard *)",
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(git rebase *)",
+      "Bash(git checkout .)",
+      "Bash(git checkout -- .)",
+      "Bash(git restore .)",
+      "Bash(git clean *)",
+      "Bash(rm -rf *)",
+      "Bash(rm -r *)",
+      "Bash(git branch -D *)",
+      "Bash(git push origin :*)",
+      "Bash(git cherry-pick *)",
+      "Bash(git reflog expire *)",
+      "Bash(pnpm prisma migrate reset *)"
+    ]
+  }
+}
