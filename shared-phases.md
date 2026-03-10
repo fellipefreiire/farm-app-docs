@@ -158,12 +158,6 @@ git add <specific files>   # never git add -A
 git commit -m "feat(domain): description"
 ```
 
-**Close the GitHub Issue with implementation notes:**
-```bash
-gh issue comment <issue-number> --repo DOCS_REPO --body "Implemented. Deviations: ..."
-gh issue close <issue-number> --repo DOCS_REPO
-```
-
 **Push and create PR:**
 
 For backend-only or frontend-only features:
@@ -198,6 +192,22 @@ gh pr create --repo FRONTEND_REPO \
 **Fullstack merge order: backend first, then frontend.**
 If backend PR has issues after frontend is approved → frontend waits. Never merge frontend before backend is stable. If backend PR is rejected or requires significant changes, do not merge frontend — keep the frontend PR open until backend is fixed and merged. If the issue was already closed by a premature frontend merge, reopen it.
 
+**Cross-repo issue closing:** GitHub does not automatically close issues across repositories — `Closes org/docs-repo#N` in a PR body only works within the same repo. After the user confirms all PRs are merged, close the issue manually:
+```bash
+gh issue comment <issue-number> --repo DOCS_REPO --body "Implemented. Backend: BACKEND_REPO#<pr>, Frontend: FRONTEND_REPO#<pr>"
+gh issue close <issue-number> --repo DOCS_REPO
+```
+
+**Sync local branches after merge:** After the issue is closed, switch back to `development`, pull the merged changes, and delete the feature branch (local + remote) so the next task starts from a clean, up-to-date state:
+```bash
+# For fullstack features
+cd backend && git checkout development && git pull && git branch -d <branch-name> && git push origin --delete <branch-name>
+cd frontend && git checkout development && git pull && git branch -d <branch-name> && git push origin --delete <branch-name>
+
+# For single-repo features, only the affected repo
+cd <repo> && git checkout development && git pull && git branch -d <branch-name> && git push origin --delete <branch-name>
+```
+
 PR body template:
 ```markdown
 ## Summary
@@ -228,3 +238,5 @@ Closes DOCS_REPO#<issue-number>    ← use in frontend PR (closes issue on merge
 - [ ] Target branch is `PR_TARGET_BRANCH`, never `PRODUCTION_BRANCH`
 - [ ] Screenshots/GIFs for UI changes (if applicable)
 ```
+
+**Do not reference Claude Code in PR titles, bodies, or comments.** No "Generated with Claude Code" footers or similar attributions.

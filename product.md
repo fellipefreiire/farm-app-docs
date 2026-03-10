@@ -1,146 +1,92 @@
 # Product
 
-High-level description of the product. This is the first document Claude reads — it shapes every technical decision, prioritization, and conversation.
-
-**Why this matters:** Without product context, Claude makes generic decisions. With it, Claude understands what matters, what can wait, and why things are built a certain way.
-
----
-
-## How to fill this document
-
-Answer each section below. Be concise — 2-3 sentences per topic is enough. Claude will ask follow-up questions if more detail is needed.
-
-If using `/project-setup`, Claude will guide you through these questions interactively.
-
----
-
-## How Claude uses this document
-
-- **During Phase 0 (Refinement):** Read before every feature to understand scope, priorities, and what matters to the product.
-- **During planning:** Reference MVP features and constraints to size implementation correctly.
-- **During code review:** Verify that implementation aligns with product goals and user roles.
-
----
-
 ## Product overview
 
-_What is this product? What problem does it solve? Who is it for?_
-
-<!-- Example: A farm management platform that helps rural producers track livestock, manage pastures, and monitor financial performance. Built for small to mid-size farms in Brazil. -->
-
----
+Farm management platform for crop producers. Helps farmers plan field operations, track input usage, manage inventory, and maintain full auditability of all activities. Built as a SaaS — single-tenant for MVP, designed to not block future multi-tenant migration.
 
 ## Target users
 
-_Who are the main users? What are their roles and goals?_
+- **Farm owner** — creates schedules, reviews and prints field tickets, manages fields and crops, oversees financials. May delegate access to family members (children with their own logins).
+- **Farm manager** — handles day-to-day operations, registers schedule execution, finalizes field tickets, manages inventory.
 
-<!-- Example:
-- **Farm owner** — monitors overall performance, makes financial decisions
-- **Farm manager** — handles day-to-day operations, registers animals and movements
-- **Veterinarian** — records health events, manages vaccination schedules
--->
-
----
+> The tractor operator does NOT have system access — they receive printed field tickets only.
 
 ## Core domains
 
-_What are the main business domains? What does each one do?_
-
-<!-- Example:
-- **Livestock** — animal registry, breed management, weight tracking
-- **Pasture** — paddock management, rotation schedules, grazing capacity
-- **Financial** — revenue, expenses, cost per animal, profitability reports
--->
-
----
+- **Auth** — authentication, authorization, role-based access, user management
+- **Field (Talhao)** — field registry, area, planted crop/variety
+- **Crop (Safra)** — crop cycles, planting periods, harvest tracking
+- **Schedule (Cronograma)** — per-field operation planning: which operations (spraying, fertigation), which inputs, on which days
+- **FieldTicket** — generated from schedule, pre-populated with inputs per field per day. Review → print → execute → return → finalize workflow
+- **Inventory (Estoque)** — inputs, seeds, harvested products, stock control
+- **Supplier (Fornecedor)** — supplier registry, input purchase tracking for future price comparison
+- **Financial** — revenue, expenses, cost per crop/field
+- **Audit** — full audit trail of every user action in the system
 
 ## MVP
 
-_Does this project have an MVP (Minimum Viable Product)?_
+**Yes — MVP is defined.**
 
-- **Yes / No**
-
-_If yes, list the features that are part of the MVP. Features outside the MVP are not priorities and should only be considered after the MVP is complete._
-
-<!-- Example:
 **MVP features:**
-- User authentication (sign-in, sign-up, password recovery)
-- Animal registry (create, edit, list, archive)
-- Pasture management (create paddocks, assign animals)
-- Basic financial dashboard (revenue vs expenses)
+- Authentication (sign-in, sign-up, password recovery)
+- Field management (create, edit, list fields with area and crop info)
+- Crop management (crop cycles, varieties, planting/harvest periods)
+- Inventory management (inputs, seeds, stock in/out)
+- Schedule system (core of the MVP):
+  - Create per-field schedule with crop, variety, time period
+  - Define operations per day (spraying, fertigation, etc.)
+  - Assign inputs to each operation per day
+  - Edit schedule over time (changes reflect in field tickets)
+- FieldTicket workflow:
+  - Auto-generate field tickets from schedule (pre-populated)
+  - Review field tickets before printing (edit inputs if needed)
+  - Print field tickets for tractor operators
+  - Register field ticket completion (same day or next day)
+  - Validate input usage before finalizing (handle last-minute changes)
+  - Finalize field ticket with confirmation
+  - Re-evaluate finalized field tickets if registered incorrectly
+- Full audit trail on every action
 
 **Post-MVP (not priority):**
-- Vaccination schedule automation
-- Multi-farm support
-- Export reports to PDF
+- Dashboard with KPIs (needs full app running first to decide what to show)
+- Financial module (revenue, expenses, cost per crop)
+- Supplier management (registry, price comparison)
+- Packaging management
+- Employee management
+- Multi-tenant SaaS
+- Offline mode with data sync
 - Mobile app
--->
-
-_If no MVP is defined, the entire project scope is treated as the deliverable — all features have equal priority._
-
----
-
-## Key features
-
-_What are the main features of the product? (full scope, not just MVP)_
-
-<!-- Example:
-- Authentication and authorization (role-based access)
-- Animal lifecycle management (birth to sale)
-- Pasture rotation with capacity alerts
-- Financial tracking with cost-per-head metrics
-- Audit log for all operations
-- Dashboard with KPIs
--->
-
----
 
 ## Tech decisions
 
-_Any product-level tech decisions that affect implementation?_
-
-<!-- Example:
-- Multi-tenant: each farm is a tenant with isolated data
-- Offline-first is NOT required — always connected
+- Single-tenant for MVP — but no design decisions that block multi-tenant migration
+- No offline mode in MVP — planned for future (some clients have poor connectivity)
 - Portuguese UI, English codebase
-- Currency: BRL only (no multi-currency)
--->
-
----
+- Currency: BRL only
+- Tractor operators receive printed field tickets only — no system access for them
+- Every user action must be audited (audit log is a first-class requirement)
 
 ## Constraints
 
-_Technical or business constraints that limit what can be built or how._
-
-<!-- Example:
-- Must run on shared hosting (no Docker in production)
-- Max 2 developers — keep architecture simple
-- Budget: no paid external services in MVP
-- Must support IE11 (or: modern browsers only)
--->
-
----
+- Low concurrent users expected (single farm in MVP)
+- Infrastructure decisions deferred to post-MVP
+- No paid external services in MVP unless strictly necessary
+- Must support future offline-first with sync capability — avoid architecture that makes this impossible
 
 ## Out of scope
 
-_What this project explicitly does NOT include. Helps prevent scope creep and keeps Claude focused._
-
-<!-- Example:
-- Mobile app — web only
-- Multi-language support — Portuguese only in v1
-- Real-time collaboration — single user per session
+- Native mobile app
+- Multi-language support
+- Multi-currency
 - Public API for third parties
--->
-
----
+- IoT / machinery integration
+- Insumo marketplace
+- Multi-tenant infrastructure (MVP is single-tenant)
 
 ## Success metrics
 
-_How do you measure if the product is working? Helps Claude understand what matters most._
-
-<!-- Example:
-- User can register an animal in under 2 minutes
-- Dashboard loads in under 3 seconds
-- Zero data loss on animal transfer operations
-- 95% uptime
--->
+- Zero data loss on field ticket operations (create, finalize, re-evaluate)
+- Full auditability — every user action traceable
+- FieldTicket generation from schedule is fast (data is pre-populated)
+- Schedule creation is naturally slower (one per field, detailed planning) — no speed target
+- System remains simple enough for non-technical farm owners

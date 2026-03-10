@@ -44,15 +44,38 @@ A NestJS `@Module({})` class that wires controllers, providers, and imports. One
 Synonym for "domain" in architectural discussions. Prefer "domain" for clarity.
 - **Context:** Used in CLAUDE.md rules (e.g., "module boundaries", "cross-module communication"). Refers to domains, not NestJS modules.
 
-<!-- Add project-specific terms below. -->
-<!-- Example:
+### Talhao (Talhão)
+A delimited area of land within a farm, used for planting a specific crop. Code: `Field`
+- **Context:** `Field` entity in the `field` domain. UI label: "Talhão".
 
-### Tenant
-An organization that owns a workspace in the platform. Each tenant has isolated data and its own set of users.
-- **Context:** `Tenant` entity in the `organization` domain. All queries are scoped by `tenantId`.
+### Safra
+A crop cycle — the period from planting to harvest of a specific crop/variety in a field. Code: `Crop`
+- **Context:** `Crop` entity in the `crop` domain. UI label: "Safra".
 
-### Credit
-A unit of consumption that limits how many operations a user can perform. Credits are purchased in packs and deducted per action.
-- **Context:** `Credit` value object in the `billing` domain. Displayed in the dashboard header.
+### Cronograma
+A per-field plan that defines which operations will be performed on which days, and which inputs each operation will use. Code: `Schedule`
+- **Context:** `Schedule` entity in the `schedule` domain. UI label: "Cronograma".
 
--->
+### Boleta
+A printed work order given to the tractor operator. Contains which products to apply in which field on a given day. Generated from the schedule. Code: `FieldTicket`
+- **Context:** `FieldTicket` entity in the `field-ticket` domain. UI label: "Boleta".
+
+### Pulverização
+The operation of spraying agricultural inputs (pesticides, herbicides, fungicides) on a field. Code: `Spraying`
+- **Context:** One of the operation types in a schedule. UI label: "Pulverização".
+
+### Fertirrigação
+The operation of applying fertilizer through irrigation systems. Code: `Fertigation`
+- **Context:** One of the operation types in a schedule. UI label: "Fertirrigação".
+
+### Insumo
+Any agricultural input used in field operations — pesticides, fertilizers, seeds, adjuvants, etc. Code: `Input`
+- **Context:** `InventoryItem` entity in the `inventory` domain. UI label: "Insumo".
+
+### Estoque
+The stock of inputs, seeds, and harvested products available on the farm. Code: `Inventory`
+- **Context:** `Inventory` domain. UI label: "Estoque".
+
+### Fornecedor
+A supplier from whom the farm purchases inputs. Code: `Supplier`
+- **Context:** `Supplier` entity in the `supplier` domain. UI label: "Fornecedor".
