@@ -15,6 +15,8 @@ src/domains/<domain>/actions/index.ts                        ← barrel export
 src/shared/constants/messages.ts                             ← DEFAULT_ERROR_MESSAGE
 ```
 
+> **Multi-entity domains:** When the domain uses subdomain folders (see `domain-organization.md`), actions move under the subdomain: `src/domains/<domain>/<subdomain>/actions/`.
+
 One action per operation. One file per action.
 
 ---

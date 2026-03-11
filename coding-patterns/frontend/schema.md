@@ -16,6 +16,8 @@ src/shared/http/schemas/pagination.schema.ts                 ← offset + cursor
 src/shared/http/schemas/message-response.schema.ts           ← delete/action-only response ({ message })
 ```
 
+> **Multi-entity domains:** When the domain uses subdomain folders (see `domain-organization.md`), schemas move under the subdomain: `src/domains/<domain>/<subdomain>/schemas/`.
+
 One schema per functionality. One file per schema.
 
 ---

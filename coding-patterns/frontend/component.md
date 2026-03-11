@@ -13,6 +13,8 @@ src/domains/<domain>/components/
   index.ts                            ← barrel export
 ```
 
+> **Multi-entity domains:** When the domain uses subdomain folders (see `domain-organization.md`), components move under the subdomain: `src/domains/<domain>/<subdomain>/components/`.
+
 ### Grouping rules
 
 Components are grouped into subdirectories when **two or more components share the same category**. Groups are not fixed — they emerge from the domain's needs. Name the directory after what the components have in common.

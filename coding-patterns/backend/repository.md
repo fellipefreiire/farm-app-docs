@@ -14,6 +14,8 @@ src/infra/database/prisma/repositories/<domain>/prisma-<entity>.repository.ts  â
 test/repositories/<domain>/in-memory-<entity>-repository.ts           â† in-memory implementation for tests
 ```
 
+> **Multi-entity domains:** When the domain uses subdomain folders (see `domain-organization.md`), the repository interface moves under the subdomain: `src/domain/<domain>/<subdomain>/application/repositories/`. Infrastructure implementations and test repositories also use subdomain folders: `src/infra/database/prisma/repositories/<domain>/<subdomain>/` and `test/repositories/<domain>/<subdomain>/`.
+
 ---
 
 ## 1. Repository interface (domain layer)

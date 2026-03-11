@@ -407,6 +407,7 @@ shadcn/ui components live in `src/shared/components/ui/`. They are the building 
 - **Layout is project-specific** — document in `layout.md` when defined
 - **No formal styleguide by default** — coding patterns are the source of truth. Add Storybook or `/styleguide` page if the project needs it.
 - **shadcn/ui primitives are immutable** — wrap, don't modify
+- **Never use `!important`** — no `!h-4`, `!p-0`, `!text-sm` or any Tailwind `!` prefix. If specificity is needed, restructure the HTML or use more specific selectors.
 
 ---
 
@@ -458,4 +459,9 @@ shadcn/ui components live in `src/shared/components/ui/`. They are the building 
 // WRONG: defining colors in tailwind.config.ts
 module.exports = { theme: { colors: { primary: '#000' } } }
 // CORRECT: define in globals.css via :root + @theme inline
+
+// WRONG: using !important via Tailwind prefix
+<Separator className="!h-4" />
+// CORRECT: restructure to avoid specificity conflicts
+<Separator className="h-4" />
 ```

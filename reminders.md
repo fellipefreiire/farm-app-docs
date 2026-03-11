@@ -14,7 +14,7 @@ Living notes for gotchas, pitfalls, and things that went wrong during developmen
 
 ## Health check
 
-health-check-counter: 1
+health-check-counter: 2
 
 The `health-check-counter` tracks how many features have been merged since the last `/health-check`. It is incremented by `/feature`, `/new-domain`, and `/small-change` after a PR is successfully created. When it reaches `HEALTH_CHECK_THRESHOLD` (defined in CLAUDE.md), Claude warns before starting the next task. It resets to 0 after `/health-check` completes.
 
@@ -34,8 +34,5 @@ The `health-check-counter` tracks how many features have been merged since the l
 <!-- Add gotchas discovered during development. Remove them when they are resolved or no longer relevant. -->
 <!-- Format: one line per gotcha, prefixed with dash. Be specific — include file, library, or context. -->
 
-<!-- Example:
-- Prisma `findMany` with `skip` + `take` does not return correct count — use a separate `count()` query
-- `cookies-next` getCookie returns `undefined` on first SSR render — check for undefined before using
-- `revalidateTag` does nothing if the API function does not have `cache: 'force-cache'` — always verify cache is enabled before adding revalidation
--->
+- `crop-types/[id]` page needs rework: currently shows varieties list, should show crop type detail page. Requires `findCropTypeById` endpoint (backend + frontend) to be created first.
+- Refresh token flow not working — access token expires after 1 hour and is not being refreshed automatically. Investigate frontend refresh logic and fix.

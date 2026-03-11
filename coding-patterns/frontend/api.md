@@ -16,6 +16,8 @@ src/domains/<domain>/api/toggle-<entity>-status.ts    ← PATCH toggle
 src/domains/<domain>/api/index.ts                     ← barrel export
 ```
 
+> **Multi-entity domains:** When the domain uses subdomain folders (see `domain-organization.md`), API functions move under the subdomain: `src/domains/<domain>/<subdomain>/api/`.
+
 One function per endpoint. One file per function.
 
 ---

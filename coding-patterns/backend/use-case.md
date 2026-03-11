@@ -11,6 +11,8 @@ src/domain/<domain>/application/use-cases/<action>-<entity>.ts
 src/domain/<domain>/application/use-cases/errors/<entity>-<problem>-error.ts
 ```
 
+> **Multi-entity domains:** When the domain uses subdomain folders (see `domain-organization.md`), use cases move under the subdomain: `src/domain/<domain>/<subdomain>/application/use-cases/`.
+
 One file per use case. One use case per file.
 
 ---
