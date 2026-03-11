@@ -10,6 +10,8 @@ Entities are the core of the domain layer. They encapsulate identity, state, and
 src/domain/<domain>/enterprise/entities/<Entity>.ts
 ```
 
+> **Multi-entity domains:** When the domain uses subdomain folders (see `domain-organization.md`), entities move under the subdomain: `src/domain/<domain>/<subdomain>/enterprise/entities/<Entity>.ts`.
+
 ---
 
 ## Base classes (src/core/)

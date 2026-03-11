@@ -12,6 +12,8 @@ src/domains/<domain>/store/<entity>-selection.store.ts   ← selection state (e.
 src/domains/<domain>/store/index.ts                      ← barrel export
 ```
 
+> **Multi-entity domains:** When the domain uses subdomain folders (see `domain-organization.md`), stores move under the subdomain: `src/domains/<domain>/<subdomain>/store/`.
+
 One store per concern. One file per store.
 
 ---

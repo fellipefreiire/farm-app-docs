@@ -10,6 +10,8 @@ Mappers translate between Prisma records and domain entities. They are static ut
 src/infra/database/prisma/mappers/<domain>/prisma-<entity>.mapper.ts
 ```
 
+> **Multi-entity domains:** When the domain uses subdomain folders (see `domain-organization.md`), mappers also use subdomain folders: `src/infra/database/prisma/mappers/<domain>/<subdomain>/`.
+
 ---
 
 ## Structure

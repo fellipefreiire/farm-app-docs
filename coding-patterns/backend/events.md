@@ -12,6 +12,8 @@ src/domain/<reacting-domain>/application/subscribers/<entity>/on-<entity>-<actio
 src/infra/events/<domain>/<domain>-events.module.ts                  ← NestJS wiring
 ```
 
+> **Multi-entity domains:** When the domain uses subdomain folders (see `domain-organization.md`), events move under the subdomain: `src/domain/<domain>/<subdomain>/enterprise/events/`. The infra events module stays flat.
+
 ---
 
 ## 1. Domain Event
