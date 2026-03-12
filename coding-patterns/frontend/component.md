@@ -1,6 +1,6 @@
 # Component Pattern
 
-Domain components are organized by type in subdirectories. They consume server actions, stores, and shared UI primitives. All interactive elements must include `data-testid` attributes for Playwright tests.
+Domain components are organized by type in subdirectories. They consume server actions, stores, and shared UI primitives. All interactive elements must include `data-testid` attributes for Playwright tests. All user-facing text is in Portuguese (pt-BR).
 
 ---
 
@@ -17,21 +17,17 @@ src/domains/<domain>/components/
 
 ### Grouping rules
 
-Components are grouped into subdirectories when **two or more components share the same category**. Groups are not fixed — they emerge from the domain's needs. Name the directory after what the components have in common.
+Components are grouped into subdirectories when **two or more components share the same category**. Groups are not fixed — they emerge from the domain's needs.
 
-Common groups that appear in most domains:
+Common groups:
 
 ```
 table/      ← columns + table component
 forms/      ← create, edit, confirmation forms
-dialogs/    ← dialog wrappers (archive, delete, etc.)
+dialogs/    ← dialog wrappers (archive, delete, cancel)
+sheets/     ← sheet wrappers (create, edit)
 ui/         ← small domain-specific UI (badges, popovers, cards)
-containers/ ← composition components (detail view, edit view)
 ```
-
-These are examples, not mandatory. A domain might have `charts/`, `filters/`, `wizards/`, or any other grouping that makes sense. The rule is: **when components belong to the same category, create a directory with a descriptive name.**
-
-A component that doesn't fit any group stays at the `components/` root.
 
 ---
 
@@ -43,36 +39,39 @@ All interactive elements must include `data-testid` for Playwright tests. Never 
 
 ```tsx
 // Buttons
-<Button data-testid="<entity>-create-submit">Create</Button>
-<Button data-testid="<entity>-edit-submit">Save</Button>
-<Button data-testid="<entity>-delete-confirm">Delete</Button>
-<Button data-testid="<entity>-archive-confirm">Archive</Button>
+<Button data-testid="<entity>-create-submit">Criar <entity></Button>
+<Button data-testid="<entity>-edit-submit">Salvar alterações</Button>
+<Button data-testid="<entity>-delete-confirm">Excluir <Entity></Button>
+<Button data-testid="<entity>-delete-cancel">Voltar</Button>
 
 // Form fields
 <InputField data-testid="<entity>-name-input" ... />
 <SelectField data-testid="<entity>-status-select" ... />
 
-// Table rows — use dynamic IDs
-<TableRow data-testid={`<entity>-row-${entity.id}`} ... />
-
 // Actions
 <Button data-testid={`<entity>-actions-${entity.id}`} ... />
+<Button data-testid={`<entity>-edit-btn-${entity.id}`} ... />
+<Button data-testid={`<entity>-delete-btn-${entity.id}`} ... />
 
 // Dialogs
-<DialogContent data-testid="<entity>-archive-dialog" ... />
 <DialogContent data-testid="<entity>-delete-dialog" ... />
+
+// Pages
+<div data-testid="<entity>s-page" ... />
+<div data-testid="<entity>-detail-page" ... />
 ```
 
 ---
 
 ## Table
 
-### Columns
+### Columns with image placeholder
 
 ```tsx
 // src/domains/<domain>/components/table/<entity>-columns.tsx
 'use client'
 
+import { <Icon> } from 'lucide-react'
 import type { CellContext, ColumnDef } from '@tanstack/react-table'
 
 import type { <Entity> } from '../../schemas'
@@ -80,20 +79,22 @@ import { <Entity>ActionsPopover } from '../ui/<entity>-actions-popover'
 
 export const <entity>Columns: ColumnDef<<Entity>>[] = [
   {
+    id: 'image',
+    cell: ImageCell,
+    meta: { className: 'w-10 pr-0' },
+  },
+  {
     header: 'Name',
     accessorKey: 'name',
     meta: { grow: true },
   },
   {
-    header: 'Status',
-    cell: ({ row }) => {
-      const entity = row.original
-      return (
-        <span data-testid={`<entity>-status-${entity.id}`}>
-          {entity.active ? 'Active' : 'Archived'}
-        </span>
-      )
-    },
+    header: 'Created at',
+    accessorKey: 'createdAt',
+    cell: ({ row }) =>
+      new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' }).format(
+        row.original.createdAt,
+      ),
   },
   {
     id: 'Actions',
@@ -101,6 +102,17 @@ export const <entity>Columns: ColumnDef<<Entity>>[] = [
     meta: { isLast: true },
   },
 ]
+
+function ImageCell() {
+  return (
+    <div
+      className="bg-muted flex size-10 items-center justify-center rounded-[6px] border border-transparent group-hover/row:border-placeholder-icon"
+      data-testid="<entity>-image"
+    >
+      <<Icon> className="text-placeholder-icon size-4" />
+    </div>
+  )
+}
 
 function ActionsCell(ctx: CellContext<<Entity>, unknown>) {
   const entity = ctx.row.original
@@ -114,8 +126,10 @@ function ActionsCell(ctx: CellContext<<Entity>, unknown>) {
 // src/domains/<domain>/components/table/<entity>-table.tsx
 'use client'
 
-import { DataTable } from '@/shared/components/data-table'
+import { useRouter } from 'next/navigation'
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table'
+
+import { DataTable } from '@/shared/components/ui/data-table'
 
 import type { <Entity> } from '../../schemas'
 import { <entity>Columns } from './<entity>-columns'
@@ -124,15 +138,34 @@ type <Entity>TableProps = {
   data: <Entity>[]
 }
 
-/** Displays a list of <entity>s in a table with sortable columns. */
+/** Displays <entity>s in a sortable table. */
 export function <Entity>Table({ data }: Readonly<<Entity>TableProps>) {
+  const router = useRouter()
+
   const table = useReactTable({
     data,
     columns: <entity>Columns,
     getCoreRowModel: getCoreRowModel(),
   })
 
-  return <DataTable table={table} />
+  function onRowClick(entity: <Entity>) {
+    router.push(`/<entities>/${entity.id}`)
+  }
+
+  return <DataTable table={table} onRowClick={onRowClick} />
+}
+```
+
+For sub-entity tables, accept the parent ID for correct navigation:
+
+```tsx
+type VarietyTableProps = {
+  data: Variety[]
+  cropTypeId: string  // parent ID for nested route
+}
+
+function onRowClick(variety: Variety) {
+  router.push(`/crop-types/${cropTypeId}/varieties/${variety.id}`)
 }
 ```
 
@@ -149,18 +182,15 @@ export function <Entity>Table({ data }: Readonly<<Entity>TableProps>) {
 import { usePathname, useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
+import { zodResolver } from '@hookform/resolvers/zod'
 
 import { InputField } from '@/shared/components/fields/input-field'
 import { Button } from '@/shared/components/ui/button'
 import { Form } from '@/shared/components/ui/form'
 import { renderToast } from '@/shared/utils/toast'
-import { zodResolver } from '@hookform/resolvers/zod'
 
 import { create<Entity>Action } from '../../actions'
-import {
-  type Create<Entity>Request,
-  create<Entity>Schema,
-} from '../../schemas'
+import { type Create<Entity>Request, create<Entity>Schema } from '../../schemas'
 
 /** Form for creating a new <entity>. */
 export function Create<Entity>Form() {
@@ -169,21 +199,14 @@ export function Create<Entity>Form() {
 
   const form = useForm<Create<Entity>Request>({
     resolver: zodResolver(create<Entity>Schema),
-    defaultValues: {
-      name: '',
-    },
+    defaultValues: { name: '' },
   })
 
   async function onSubmit(data: Create<Entity>Request) {
-    const toastId = toast.loading('Creating <entity>...')
-
+    const toastId = toast.loading('Criando <entity>...')
     const res = await create<Entity>Action(data)
-
     renderToast(res.ok, res.message, toastId)
-
-    if (res.ok) {
-      push(pathname)
-    }
+    if (res.ok) { push(pathname) }
   }
 
   return (
@@ -193,18 +216,10 @@ export function Create<Entity>Form() {
         className="flex h-full flex-col gap-4 p-4"
         data-testid="<entity>-create-form"
       >
-        <InputField
-          control={form.control}
-          label="Name"
-          name="name"
-          data-testid="<entity>-name-input"
-        />
+        <InputField control={form.control} label="Nome" name="name" data-testid="<entity>-name-input" />
         <div className="mt-auto ml-auto flex gap-4">
-          <Button variant="outline" data-testid="<entity>-create-cancel">
-            Cancel
-          </Button>
           <Button type="submit" data-testid="<entity>-create-submit">
-            Create <entity>
+            Criar <entity>
           </Button>
         </div>
       </form>
@@ -213,129 +228,41 @@ export function Create<Entity>Form() {
 }
 ```
 
-### Edit form
+### Confirmation form (delete)
+
+Destructive actions always use a confirmation dialog. The form has no fields — just a warning message and action buttons.
 
 ```tsx
-// src/domains/<domain>/components/forms/edit-<entity>-form.tsx
+// src/domains/<domain>/components/forms/delete-<entity>-form.tsx
 'use client'
 
 import { useForm } from 'react-hook-form'
-import { toast } from 'sonner'
-
-import { InputField } from '@/shared/components/fields/input-field'
-import { Button } from '@/shared/components/ui/button'
-import { Form } from '@/shared/components/ui/form'
-import { renderToast } from '@/shared/utils/toast'
-import { zodResolver } from '@hookform/resolvers/zod'
-
-import { edit<Entity>Action } from '../../actions'
-import {
-  type <Entity>,
-  type Edit<Entity>Request,
-  edit<Entity>Schema,
-} from '../../schemas'
-
-type Edit<Entity>FormProps = {
-  entity: <Entity>
-  onSuccess?: () => void
-  onCancel?: () => void
-}
-
-/** Form for editing an existing <entity>. */
-export function Edit<Entity>Form({
-  entity,
-  onSuccess,
-  onCancel,
-}: Edit<Entity>FormProps) {
-  const form = useForm<Edit<Entity>Request>({
-    resolver: zodResolver(edit<Entity>Schema),
-    defaultValues: {
-      name: entity.name,
-    },
-  })
-
-  async function onSubmit(data: Edit<Entity>Request) {
-    const toastId = toast.loading('Saving <entity>...')
-
-    const res = await edit<Entity>Action(entity.id, data)
-
-    renderToast(res.ok, res.message, toastId)
-
-    if (res.ok) {
-      onSuccess?.()
-    }
-  }
-
-  return (
-    <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="flex h-full flex-col gap-4 p-4"
-        data-testid="<entity>-edit-form"
-      >
-        <InputField
-          control={form.control}
-          label="Name"
-          name="name"
-          data-testid="<entity>-name-input"
-        />
-        <div className="mt-auto ml-auto flex gap-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            data-testid="<entity>-edit-cancel"
-          >
-            Cancel
-          </Button>
-          <Button type="submit" data-testid="<entity>-edit-submit">
-            Save changes
-          </Button>
-        </div>
-      </form>
-    </Form>
-  )
-}
-```
-
-### Confirmation form (archive/delete)
-
-Confirmation forms are simple — no fields, just a message and action buttons. They call the server action directly.
-
-```tsx
-// src/domains/<domain>/components/forms/archive-<entity>-form.tsx
-'use client'
-
-import { useForm } from 'react-hook-form'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
 import { Button } from '@/shared/components/ui/button'
 import { Form } from '@/shared/components/ui/form'
 import { renderToast } from '@/shared/utils/toast'
 
-import { toggle<Entity>StatusAction } from '../../actions'
+import { delete<Entity> } from '../../actions'
 
-type Archive<Entity>FormProps = {
+type Delete<Entity>FormProps = {
   entityId: string
   closeDialog: () => void
 }
 
-/** Confirmation form for archiving a <entity>. */
-export function Archive<Entity>Form({
-  entityId,
-  closeDialog,
-}: Archive<Entity>FormProps) {
+/** Confirmation form for deleting a <entity>. */
+export function Delete<Entity>Form({ entityId, closeDialog }: Delete<Entity>FormProps) {
   const form = useForm()
+  const router = useRouter()
 
   async function onSubmit() {
-    const toastId = toast.loading('Archiving <entity>...')
-
-    const res = await toggle<Entity>StatusAction(entityId)
-
+    const toastId = toast.loading('Excluindo <entity>...')
+    const res = await delete<Entity>(entityId)
     renderToast(res.ok, res.message, toastId)
-
     if (res.ok) {
       closeDialog()
+      router.push('/<entities>')
     }
   }
 
@@ -344,22 +271,17 @@ export function Archive<Entity>Form({
       <form
         onSubmit={form.handleSubmit(onSubmit)}
         className="flex flex-col gap-4"
-        data-testid="<entity>-archive-form"
+        data-testid="<entity>-delete-form"
       >
         <p className="text-sm">
-          Are you sure you want to archive this <entity>? It will no longer
-          appear in default listings.
+          Tem certeza que deseja excluir esta <entity>? Esta ação não pode ser desfeita.
         </p>
-        <div className="mt-auto ml-auto flex gap-4">
-          <Button
-            variant="outline"
-            onClick={closeDialog}
-            data-testid="<entity>-archive-cancel"
-          >
-            Cancel
+        <div className="mt-auto ml-auto flex gap-2">
+          <Button type="button" variant="outline" onClick={closeDialog} data-testid="<entity>-delete-cancel">
+            Voltar
           </Button>
-          <Button type="submit" data-testid="<entity>-archive-confirm">
-            Archive
+          <Button type="submit" variant="destructive" data-testid="<entity>-delete-confirm">
+            Excluir <Entity>
           </Button>
         </div>
       </form>
@@ -368,14 +290,20 @@ export function Archive<Entity>Form({
 }
 ```
 
+**Key points:**
+- Button gap is `gap-2` (8px) in confirmation modals
+- Cancel button label: "Voltar"
+- Delete button: `variant="destructive"`, label: "Excluir {Nome do Módulo}"
+- After deletion, redirect to listing page via `router.push`
+
 ---
 
 ## Dialogs
 
-Dialogs are thin wrappers around forms. They own the open/close state via the store and render the form inside.
+Dialogs are thin wrappers around forms. They own the open/close state via the store.
 
 ```tsx
-// src/domains/<domain>/components/dialogs/archive-<entity>-dialog.tsx
+// src/domains/<domain>/components/dialogs/delete-<entity>-dialog.tsx
 'use client'
 
 import {
@@ -386,30 +314,23 @@ import {
 } from '@/shared/components/ui/dialog'
 
 import { use<Entity>DialogsStore } from '../../store'
-import { Archive<Entity>Form } from '../forms/archive-<entity>-form'
+import { Delete<Entity>Form } from '../forms/delete-<entity>-form'
 
-type Archive<Entity>DialogProps = {
-  entityId: string
-}
+/** Dialog for confirming <entity> deletion. */
+export function Delete<Entity>Dialog() {
+  const { deleteDialogOpen, setDeleteDialogOpen } = use<Entity>DialogsStore()
 
-/** Dialog for confirming <entity> archival. */
-export function Archive<Entity>Dialog({ entityId }: Archive<Entity>DialogProps) {
-  const { archiveDialogOpen, setArchiveDialogOpen } = use<Entity>DialogsStore()
-
-  function closeDialog() {
-    setArchiveDialogOpen(null)
-  }
+  function closeDialog() { setDeleteDialogOpen(null) }
 
   return (
-    <Dialog
-      open={archiveDialogOpen === entityId}
-      onOpenChange={() => setArchiveDialogOpen(null)}
-    >
-      <DialogContent data-testid="<entity>-archive-dialog">
+    <Dialog open={!!deleteDialogOpen} onOpenChange={() => setDeleteDialogOpen(null)}>
+      <DialogContent data-testid="<entity>-delete-dialog">
         <DialogHeader>
-          <DialogTitle>Archive <entity></DialogTitle>
+          <DialogTitle>Excluir <Entity></DialogTitle>
         </DialogHeader>
-        <Archive<Entity>Form entityId={entityId} closeDialog={closeDialog} />
+        {deleteDialogOpen && (
+          <Delete<Entity>Form entityId={deleteDialogOpen} closeDialog={closeDialog} />
+        )}
       </DialogContent>
     </Dialog>
   )
@@ -420,17 +341,15 @@ export function Archive<Entity>Dialog({ entityId }: Archive<Entity>DialogProps) 
 
 ## UI components
 
-Small, focused components for domain-specific UI elements.
-
 ### Actions popover
 
 ```tsx
 // src/domains/<domain>/components/ui/<entity>-actions-popover.tsx
 'use client'
 
+import { useState } from 'react'
 import { Ellipsis } from 'lucide-react'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 
 import { Button } from '@/shared/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
@@ -440,42 +359,41 @@ import { use<Entity>DialogsStore } from '../../store'
 
 type <Entity>ActionsPopoverProps = {
   entity: <Entity>
+  showEdit?: boolean    // default true — set false when edit button is already visible
 }
 
-/** Contextual actions menu for a <entity> (edit, archive). */
-export function <Entity>ActionsPopover({ entity }: <Entity>ActionsPopoverProps) {
+/** Contextual actions menu for a <entity> (edit, delete). */
+export function <Entity>ActionsPopover({ entity, showEdit = true }: <Entity>ActionsPopoverProps) {
   const pathname = usePathname()
-  const { setArchiveDialogOpen } = use<Entity>DialogsStore()
+  const router = useRouter()
+  const { setDeleteDialogOpen } = use<Entity>DialogsStore()
+  const [open, setOpen] = useState(false)
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          size="icon"
-          data-testid={`<entity>-actions-${entity.id}`}
-        >
+        <Button variant="outline" size="icon" className="size-7" data-testid={`<entity>-actions-${entity.id}`}>
           <Ellipsis />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-56" align="end">
+      <PopoverContent className="w-56 p-0.5" align="end">
+        {showEdit && (
+          <Button
+            variant="ghost"
+            className="w-full justify-start"
+            onClick={() => { setOpen(false); router.push(`${pathname}?edit-<entity>=${entity.id}`) }}
+            data-testid={`<entity>-edit-btn-${entity.id}`}
+          >
+            Editar <entity>
+          </Button>
+        )}
         <Button
-          asChild
           variant="ghost"
-          className="w-full justify-start"
-          data-testid={`<entity>-edit-link-${entity.id}`}
+          className="w-full justify-start text-destructive"
+          onClick={() => { setOpen(false); setDeleteDialogOpen(entity.id) }}
+          data-testid={`<entity>-delete-btn-${entity.id}`}
         >
-          <Link href={`${pathname}?edit-<entity>=${entity.id}`}>
-            Edit <entity>
-          </Link>
-        </Button>
-        <Button
-          variant="ghost"
-          className="w-full justify-start"
-          onClick={() => setArchiveDialogOpen(entity.id)}
-          data-testid={`<entity>-archive-btn-${entity.id}`}
-        >
-          {entity.active ? 'Archive' : 'Activate'}
+          Excluir <entity>
         </Button>
       </PopoverContent>
     </Popover>
@@ -483,38 +401,48 @@ export function <Entity>ActionsPopover({ entity }: <Entity>ActionsPopoverProps) 
 }
 ```
 
+**Key points:**
+- Trigger button: `size-7` (28×28)
+- Content padding: `p-0.5` (2px)
+- `showEdit` prop: set `false` on detail pages where edit button is already visible
+- Destructive actions use `text-destructive` and always open a confirmation dialog
+- All text in Portuguese
+
 ---
 
 ## Barrel export
 
 ```ts
 // src/domains/<domain>/components/index.ts
-export { <entity>Columns } from './table/<entity>-columns'
-export { <Entity>Table } from './table/<entity>-table'
-export { Create<Entity>Form } from './forms/create-<entity>-form'
-export { Edit<Entity>Form } from './forms/edit-<entity>-form'
-export { Archive<Entity>Form } from './forms/archive-<entity>-form'
-export { Archive<Entity>Dialog } from './dialogs/archive-<entity>-dialog'
-export { <Entity>ActionsPopover } from './ui/<entity>-actions-popover'
+export * from './table/<entity>-columns'
+export * from './table/<entity>-table'
+export * from './forms/create-<entity>-form'
+export * from './forms/edit-<entity>-form'
+export * from './forms/delete-<entity>-form'
+export * from './dialogs/delete-<entity>-dialog'
+export * from './sheets/create-<entity>-sheet'
+export * from './sheets/edit-<entity>-sheet'
+export * from './ui/<entity>-actions-popover'
 ```
 
 ---
 
 ## Rules
 
-- Components are grouped into subdirectories by category — groups emerge from the domain's needs, not from a fixed list
+- Components are grouped into subdirectories by category — groups emerge from the domain's needs
 - `'use client'` directive on all components that use hooks, state, or event handlers
-- Every interactive element must have a `data-testid` attribute — never rely on CSS selectors or text content in tests
-- `data-testid` naming: `<entity>-<component>-<element>`, dynamic IDs use template literals
+- Every interactive element must have a `data-testid` attribute
 - Every component must have a one-line JSDoc comment describing what it does
 - Forms use `react-hook-form` + `zodResolver` — validation is always schema-driven
 - Forms show `toast.loading` before the action, `renderToast` after — never silent mutations
+- Toast messages in Portuguese: "Criando...", "Excluindo...", "Salvando..."
 - Dialogs are thin wrappers — they manage open/close via the store and render a form inside
-- Confirmation actions (archive, delete) use a form component even without fields — keeps the pattern consistent
+- Destructive actions always require a confirmation dialog with `variant="destructive"` button
+- Destructive option text uses `text-destructive` in popovers
+- After deletion, redirect to the listing page
 - Columns are defined in a separate file from the table component
 - Every `components/` directory must have an `index.ts` barrel export
-- Shared UI primitives (Button, Input, Dialog, etc.) come from `shared/ui/` — never redefine
-- Shared form fields (InputField, SelectField, etc.) come from `shared/components/fields/`
+- All user-facing text in Portuguese (pt-BR)
 
 ---
 
@@ -523,37 +451,33 @@ export { <Entity>ActionsPopover } from './ui/<entity>-actions-popover'
 ```tsx
 // ❌ missing data-testid on interactive element
 <Button type="submit">Save</Button>
-// always: <Button type="submit" data-testid="<entity>-edit-submit">Save</Button>
+// ✅ <Button type="submit" data-testid="<entity>-edit-submit">Salvar alterações</Button>
 
-// ❌ flat component directory when components share a category
-components/
-  create-form.tsx
-  edit-form.tsx
-  archive-form.tsx
-  delete-form.tsx
-// group related components: forms/create-form.tsx, forms/edit-form.tsx, etc.
+// ❌ destructive action without confirmation dialog
+onClick={() => deleteEntity(id)}
+// ✅ onClick={() => setDeleteDialogOpen(id)}
 
-// ❌ dialog with inline form logic
-export function ArchiveDialog() {
-  async function handleArchive() { ... }  // extract to a form component
-  return <Dialog>...<Button onClick={handleArchive}>...</Dialog>
-}
+// ❌ destructive option without red text
+<Button variant="ghost">Excluir</Button>
+// ✅ <Button variant="ghost" className="text-destructive">Excluir <entity></Button>
+
+// ❌ English text in UI
+<Button>Delete</Button>
+// ✅ <Button>Excluir Variedade</Button>
+
+// ❌ no redirect after deletion
+if (res.ok) { closeDialog() }
+// ✅ if (res.ok) { closeDialog(); router.push('/<entities>') }
 
 // ❌ no toast feedback on mutation
-async function onSubmit(data) {
-  await createAction(data)  // missing toast.loading + renderToast
-}
+await createAction(data)
+// ✅ const toastId = toast.loading('Criando...'); ... renderToast(...)
 
-// ❌ missing JSDoc
-export function EntityTable() { ... }  // add: /** Displays entities in a table. */
+// ❌ popover trigger without size-7
+<Button variant="outline" size="icon">
+// ✅ <Button variant="outline" size="icon" className="size-7">
 
-// ❌ using CSS selectors in tests
-await page.locator('.submit-btn').click()  // use data-testid
-
-// ❌ duplicating shared UI primitives
-function MyButton() { ... }  // use <Button> from shared/ui/
-
-// ❌ missing 'use client' on component with hooks
-import { useState } from 'react'
-export function MyComponent() { ... }  // needs 'use client'
+// ❌ showEdit=true on detail page where edit button exists
+<ActionsPopover entity={entity} />
+// ✅ <ActionsPopover entity={entity} showEdit={false} />
 ```

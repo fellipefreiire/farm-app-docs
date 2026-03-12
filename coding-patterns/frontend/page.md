@@ -11,23 +11,52 @@ src/app/
   (public)/                          ← unauthenticated routes (sign-in, sign-up)
     page.tsx
   (private)/                         ← authenticated routes
-    dashboard/
-      <domain>/
-        page.tsx                     ← list page
-        [id]/
-          page.tsx                   ← detail page
-        loading.tsx                  ← loading skeleton
-        not-found.tsx                ← 404 page
-      layout.tsx                     ← shared layout (sidebar, nav)
+    <domain>/
+      page.tsx                       ← list page
+      loading.tsx                    ← loading skeleton
+      not-found.tsx                  ← 404 page
+      [id]/
+        page.tsx                     ← detail page
+        loading.tsx
+        not-found.tsx
+        audit/
+          page.tsx                   ← audit log page
+          loading.tsx
+        <sub-entity>/                ← sub-module listing (e.g., varieties)
+          page.tsx
+          loading.tsx
+          [subId]/
+            page.tsx                 ← sub-module detail page
+            loading.tsx
+            not-found.tsx
+            audit/
+              page.tsx
+              loading.tsx
+    layout.tsx                       ← shared layout (sidebar, nav)
   layout.tsx                         ← root layout (fonts, providers, Toaster)
   not-found.tsx                      ← global 404
 ```
+
+### Routing hierarchy
+
+Sub-entities that have a 1-N relationship with a parent entity are nested under the parent's route:
+
+```
+/crop-types                          ← list crop types
+/crop-types/[id]                     ← crop type detail
+/crop-types/[id]/audit               ← crop type audit logs
+/crop-types/[id]/varieties           ← varieties for this crop type
+/crop-types/[id]/varieties/[varietyId]       ← variety detail (submodule layout)
+/crop-types/[id]/varieties/[varietyId]/audit ← variety audit logs
+```
+
+Sub-entities do NOT have standalone top-level routes. They only exist in the context of their parent.
 
 ---
 
 ## Route groups
 
-Use `(public)` and `(private)` as the default route groups. Add more groups as needed by the project (e.g. `(onboarding)`, `(admin)`).
+Use `(public)` and `(private)` as the default route groups.
 
 ```
 src/app/
@@ -37,35 +66,17 @@ src/app/
 
 ---
 
-## layout.tsx vs template.tsx
-
-- **layout.tsx** — persists across navigations within the same segment. Use for shared UI that should not remount (sidebar, navigation, providers). State is preserved between page transitions.
-- **template.tsx** — re-renders on every navigation. Use when you need fresh state on each page visit (e.g. auth check on every navigation, analytics tracking).
-
-When in doubt, read the [Next.js documentation](https://nextjs.org/docs/app/api-reference/file-conventions/layout) to verify which one fits the use case.
-
----
-
 ## List page
 
 ```tsx
-// src/app/(private)/dashboard/<domain>/page.tsx
+// src/app/(private)/<domain>/page.tsx
 import { list<Entity>s } from '@/domains/<domain>/api'
 import { <Entity>Table } from '@/domains/<domain>/components'
-import { getSearchParam } from '@/shared/utils/search-params'
 
 export default async function <Entity>sPage(props: NextPageProps) {
   const searchParams = await props.searchParams
 
-  const page = getSearchParam(searchParams.page)
-  const search = getSearchParam(searchParams.search)
-  const active = getSearchParam(searchParams.active)
-
-  const data = await list<Entity>s({
-    page: page ? Number(page) : undefined,
-    search,
-    active: active !== undefined ? active === 'true' : undefined,
-  })
+  const data = await list<Entity>s({ perPage: 100 })
 
   return (
     <div className="container flex h-full flex-col p-10" data-testid="<entity>s-page">
@@ -86,69 +97,232 @@ export default async function <Entity>sPage(props: NextPageProps) {
 
 ---
 
-## Detail page
+## Detail page (top-level entity)
+
+Top-level entities use `DetailLayout` with a 12-column grid (9/3 split), `DetailHeader` with breadcrumbs, placeholder image, and actions.
 
 ```tsx
-// src/app/(private)/dashboard/<domain>/[id]/page.tsx
-import { find<Entity>ById } from '@/domains/<domain>/api'
+// src/app/(private)/<domain>/[id]/page.tsx
+import { DetailLayout } from '@/shared/components/detail-layout'
+import { DetailHeader } from '@/shared/components/detail-header'
+import { DetailSection } from '@/shared/components/detail-section'
+import { DetailField } from '@/shared/components/detail-field'
 
 export default async function <Entity>DetailPage(
   props: NextPageProps<{ id: string }>,
 ) {
   const params = await props.params
+  const searchParams = await props.searchParams
   const id = params.id
 
   const entity = await find<Entity>ById(id)
 
   return (
-    <div className="container flex h-full flex-col p-10" data-testid="<entity>-detail-page">
-      <header className="flex items-start justify-between pb-6">
-        <h1 className="text-2xl font-bold">{entity.name}</h1>
-      </header>
-      <main className="grid grid-cols-6 gap-12">
-        <div className="col-span-4">
-          {/* Main content */}
-        </div>
-        <div className="col-span-2">
-          {/* Sidebar details */}
-        </div>
-      </main>
-    </div>
+    <>
+      <DetailLayout
+        header={
+          <DetailHeader
+            backHref="/<entities>"
+            backLabel="<Entities>"
+            title={entity.name}
+            icon={<LucideIcon>}
+            actions={
+              <>
+                <Button variant="outline" size="sm" className="font-bold" asChild>
+                  <Link href={`/<entities>/${id}?edit-<entity>=${id}`}>Editar <Entity></Link>
+                </Button>
+                <<Entity>ActionsPopover entity={entity} showEdit={false} />
+              </>
+            }
+          />
+        }
+        main={/* 9 columns: tables, audit, etc. */}
+        sidebar={
+          <DetailSection
+            title="Detalhes"
+            actions={
+              <Button variant="outline" size="icon" className="size-7" asChild>
+                <Link href={`/<entities>/${id}?edit-<entity>=${id}`}><Pencil /></Link>
+              </Button>
+            }
+          >
+            <div className="flex flex-col gap-4">
+              <DetailField label="Nome" icon={<LucideIcon>}>{entity.name}</DetailField>
+              <DetailField label="Criado em" icon={Calendar}>{formattedDate}</DetailField>
+            </div>
+          </DetailSection>
+        }
+      />
+
+      {isEditing && <Edit<Entity>Sheet entity={entity} />}
+      <Delete<Entity>Dialog />
+    </>
   )
 }
 ```
 
-When the detail page needs multiple data sources, fetch them in parallel:
+### Detail page header actions
+
+- "Editar {Nome do Módulo}" button with `font-bold`, `variant="outline"`, `size="sm"`
+- Actions popover with `showEdit={false}` (edit is already visible as a button)
+- Pencil edit button (`size-7`, 28×28) in sidebar "Detalhes" section title
+
+### Detail page linked fields
+
+When a field references another entity, use the `href` prop on `DetailField` to make it a link:
 
 ```tsx
-const [entity, relatedData] = await Promise.all([
-  find<Entity>ById(id),
-  listRelatedItems({ entityId: id }),
-])
+<DetailField
+  label="Tipo de Cultura"
+  icon={Wheat}
+  href={`/crop-types/${cropType.id}`}
+  data-testid="variety-crop-type-link"
+>
+  {cropType.name}
+</DetailField>
+```
+
+### Related tables in detail pages
+
+When a detail page shows a related entity table (e.g., crop-type shows varieties):
+
+- Add a `+` button (`size-7`, Plus icon) in the section title to create related entities inline
+- "Examinar mais itens" link below the table points to the sub-entity listing page
+- Creating from the detail page opens a `StackedSheet` with the parent entity pre-selected and disabled
+
+---
+
+## Detail page (sub-entity / submodule)
+
+Sub-entities in a 1-N relationship use a simplified layout without the grid or sidebar. See `design-system.md` → "Submodule detail pages" for the full visual specification.
+
+```tsx
+// src/app/(private)/<parent>/[id]/<sub-entity>/[subId]/page.tsx
+export default async function <SubEntity>DetailPage(
+  props: NextPageProps<{ id: string; subId: string }>,
+) {
+  const params = await props.params
+  const parentId = params.id
+  const subId = params.subId
+
+  const [parent, subEntity] = await Promise.all([
+    findParentById(parentId),
+    findSubEntityById(subId),
+  ])
+
+  return (
+    <>
+      <div className="container flex h-full flex-col p-10" data-testid="<sub-entity>-detail-page">
+        <header className="flex shrink-0 items-end justify-between pb-2">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <Rows4 size={12} className="text-muted-foreground" />
+              <span className="text-[13px] font-medium uppercase text-muted-foreground">
+                <Sub-Entity Type>
+              </span>
+            </div>
+            <h1 className="text-[28px] font-bold leading-none">{subEntity.name}</h1>
+          </div>
+          <div className="flex items-end gap-2">{/* actions */}</div>
+        </header>
+
+        <Separator className="mb-4" />
+
+        <div className="mb-8 flex items-start">
+          {/* Inline fields with vertical separators (mx-5) between them */}
+        </div>
+
+        {/* Sections (auditoria, etc.) */}
+      </div>
+    </>
+  )
+}
+```
+
+---
+
+## Sub-entity listing page
+
+When a sub-entity has its own listing page under the parent, use `DetailHeader` with breadcrumbs:
+
+```tsx
+// src/app/(private)/<parent>/[id]/<sub-entities>/page.tsx
+<DetailHeader
+  breadcrumbs={[{ href: '/<parents>', label: '<Parents>' }]}
+  backHref={`/<parents>/${id}`}
+  backLabel={parent.name}
+  title="<Sub-Entities>"
+  icon={<LucideIcon>}
+  actions={<Button>Adicionar <Sub-Entity></Button>}
+/>
+```
+
+Creating a sub-entity from this page always pre-selects the parent entity (disabled select).
+
+---
+
+## Audit page
+
+```tsx
+// src/app/(private)/<domain>/[id]/audit/page.tsx
+<DetailHeader
+  breadcrumbs={[{ href: '/<entities>', label: '<Entities>' }]}
+  backHref={`/<entities>/${id}`}
+  backLabel={entity.name}
+  title="Auditoria"
+  icon={<LucideIcon>}
+/>
+```
+
+For sub-entity audit pages, include the full breadcrumb chain:
+
+```tsx
+breadcrumbs={[
+  { href: '/<parents>', label: '<Parents>' },
+  { href: `/<parents>/${parentId}`, label: parent.name },
+  { href: `/<parents>/${parentId}/<sub-entities>`, label: '<Sub-Entities>' },
+]}
+```
+
+---
+
+## Post-deletion redirect
+
+After successfully deleting an entity, redirect to the corresponding listing page:
+
+```tsx
+// In delete form onSubmit:
+if (res.ok) {
+  closeDialog()
+  router.push('/<entities>')  // or parent listing for sub-entities
+}
+```
+
+For sub-entities, extract the parent ID from the URL path:
+
+```tsx
+const pathname = usePathname()
+const parentId = pathname.split('/<parents>/')[1]?.split('/')[0]
+router.push(`/<parents>/${parentId}/<sub-entities>`)
 ```
 
 ---
 
 ## loading.tsx
 
-Loading pages use skeletons that mirror the layout of the actual page. This gives the user a visual preview of the content structure while data loads.
+Loading pages use skeletons that mirror the layout of the actual page.
 
 ```tsx
-// src/app/(private)/dashboard/<domain>/loading.tsx
 import { Skeleton } from '@/shared/components/ui/skeleton'
 
 export default function Loading() {
   return (
-    <div className="container flex h-full flex-col p-10">
+    <div className="container flex h-full flex-col p-10" data-testid="loading-skeleton">
       <div className="mb-10 flex justify-between">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-10 w-40" />
       </div>
-      <div className="flex flex-col gap-2">
-        {Array.from({ length: 10 }).map((_, i) => (
-          <Skeleton key={i} className="h-12 w-full" />
-        ))}
-      </div>
+      <Skeleton className="h-64 w-full rounded-md" />
     </div>
   )
 }
@@ -157,33 +331,30 @@ export default function Loading() {
 **Rules:**
 - Skeleton layout must match the actual page design — same spacing, same proportions
 - Use `Skeleton` from `shared/ui/` — never use spinners or plain text
-- Keep it simple — approximate the shape, don't replicate every detail
 
 ---
 
 ## not-found.tsx
 
-Displayed when the page route doesn't exist or when the backend returns 404 (via `notFound()` in `handleHttpError`).
-
 ```tsx
-// src/app/(private)/dashboard/<domain>/not-found.tsx
 import Link from 'next/link'
-
-import { Button } from '@/shared/components/ui/button'
 
 export default function NotFound() {
   return (
     <div
-      className="flex h-full flex-col items-center justify-center gap-4"
-      data-testid="<entity>-not-found"
+      className="container flex h-full flex-col items-center justify-center gap-4 p-10"
+      data-testid="not-found"
     >
-      <h1 className="text-2xl font-bold"><Entity> not found</h1>
-      <p className="text-gray-500">
-        The <entity> you are looking for does not exist or has been removed.
+      <h2 className="text-2xl font-semibold"><Entity> não encontrada</h2>
+      <p className="text-sm text-muted-foreground">
+        A <entity> que você está procurando não existe.
       </p>
-      <Button asChild>
-        <Link href="/dashboard/<entities>">Back to <entities></Link>
-      </Button>
+      <Link
+        href="/<entities>"
+        className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground"
+      >
+        Voltar para <Entities>
+      </Link>
     </div>
   )
 }
@@ -191,22 +362,24 @@ export default function NotFound() {
 
 **Rules:**
 - Every domain route segment should have a `not-found.tsx`
-- API functions call `notFound()` on 404 responses (via `handleHttpError`) — this triggers the nearest `not-found.tsx`
+- Text in Portuguese (pt-BR)
 - Always include a link back to the list page
 
 ---
 
 ## Rules
 
-- Pages that fetch data are async Server Components — data fetching happens on the server, never in `useEffect`. Pages without data fetching do not need to be async
+- Pages that fetch data are async Server Components — data fetching happens on the server, never in `useEffect`
 - Filters and listing state are controlled via `searchParams` — the URL is always the source of truth
 - Use `Promise.all` to fetch independent data in parallel — never sequential awaits for unrelated data
-- Route groups: `(public)` and `(private)` as default — add more as needed
-- Use `layout.tsx` for persistent shared UI (sidebar, nav) — use `template.tsx` when fresh state is needed on every navigation
+- Route groups: `(public)` and `(private)` as default
+- Sub-entities are nested under their parent route — never standalone top-level routes
 - Every domain route must have `loading.tsx` with skeletons matching the page design
 - Every domain route must have `not-found.tsx` for 404 handling
 - Pages compose domain components — they don't render complex UI inline
 - `data-testid` on page root containers for Playwright tests
+- All user-facing text in Portuguese (pt-BR)
+- After deletion, redirect to the listing page
 
 ---
 
@@ -229,28 +402,20 @@ export default function Loading() {
   return <Spinner />  // use Skeleton matching page layout
 }
 
-// ❌ missing not-found.tsx
-// API returns 404 → generic Next.js error page
-// always add not-found.tsx per domain route
+// ❌ sub-entity as standalone route
+src/app/(private)/varieties/page.tsx  // should be under /crop-types/[id]/varieties
+// CORRECT:
+src/app/(private)/crop-types/[id]/varieties/page.tsx
 
-// ❌ hardcoded filter state
-const [active, setActive] = useState(true)  // use searchParams
+// ❌ using DetailLayout for sub-entity detail
+<DetailLayout header={...} main={...} sidebar={...} />
+// sub-entities use simplified layout without grid/sidebar
 
-// ❌ complex UI inline in page
-export default async function Page() {
-  return (
-    <div>
-      <table>
-        <tr>...</tr>  // extract to domain component
-      </table>
-    </div>
-  )
-}
+// ❌ English text in UI
+<h2>Variety Not Found</h2>
+// CORRECT:
+<h2>Variedade não encontrada</h2>
 
-// ❌ wrong route group
-src/app/dashboard/sign-in/page.tsx  // should be in (public)
-
-// ❌ using layout.tsx when template.tsx is needed
-// auth check in layout won't re-run on navigation within the segment
-// use template.tsx for checks that must run on every navigation
+// ❌ no redirect after deletion
+if (res.ok) { closeDialog() }  // must also router.push to listing page
 ```

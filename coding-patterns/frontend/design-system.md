@@ -23,155 +23,6 @@ frontend/
 
 Tailwind v4 replaces `tailwind.config.ts` with CSS-native `@theme` directives. All design tokens live in `globals.css`.
 
-```css
-/* globals.css */
-@import "tailwindcss";
-
-/* ── Light theme (default) ── */
-:root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --radius: 0.625rem;
-
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.714);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
-
-/* ── Dark theme ── */
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-
-  --card: oklch(0.145 0 0);
-  --card-foreground: oklch(0.985 0 0);
-
-  --popover: oklch(0.145 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
-
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
-}
-
-/* ── Theme mapping (Tailwind v4) ── */
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
-
-  --radius-sm: calc(var(--radius) - 0.125rem);
-  --radius-md: calc(var(--radius));
-  --radius-lg: calc(var(--radius) + 0.125rem);
-  --radius-xl: calc(var(--radius) + 0.25rem);
-}
-```
-
 ### How it works
 
 1. **`:root`** defines CSS variables with light-mode OKLCH values
@@ -193,38 +44,80 @@ Every color used in the application must go through a semantic token. Never use 
 | `background` / `foreground` | Page background and default text | `bg-background text-foreground` |
 | `card` / `card-foreground` | Card surfaces | `bg-card text-card-foreground` |
 | `popover` / `popover-foreground` | Floating surfaces (dropdowns, tooltips) | `bg-popover text-popover-foreground` |
-| `primary` / `primary-foreground` | Primary actions (buttons, links) | `bg-primary text-primary-foreground` |
+| `primary` / `primary-foreground` | Primary actions, links, active sidebar sub-items | `bg-primary text-primary` |
 | `secondary` / `secondary-foreground` | Secondary actions | `bg-secondary text-secondary-foreground` |
-| `muted` / `muted-foreground` | Subdued backgrounds and text | `bg-muted text-muted-foreground` |
-| `accent` / `accent-foreground` | Highlights, hover states | `bg-accent text-accent-foreground` |
-| `destructive` / `destructive-foreground` | Danger actions (delete, errors) | `bg-destructive text-destructive-foreground` |
+| `muted` / `muted-foreground` | Subdued backgrounds (table hover, placeholder containers), secondary text | `bg-muted text-muted-foreground` |
+| `accent` / `accent-foreground` | Highlights | `bg-accent text-accent-foreground` |
+| `destructive` / `destructive-foreground` | Danger actions (delete, errors) | `bg-destructive text-destructive` |
 | `border` | Borders and dividers | `border-border` |
 | `input` | Form input borders | `border-input` |
 | `ring` | Focus rings | `ring-ring` |
+| `overlay` | Modal/dialog backdrop | `bg-overlay/50` |
+| `placeholder-icon` | Placeholder image icons in tables and headers | `text-placeholder-icon` |
+
+### Current color values (light theme)
+
+| Token | Value | Hex equivalent | Notes |
+|-------|-------|----------------|-------|
+| `primary` | `oklch(0.50 0.15 155)` | Vibrant emerald green | Agricultural identity |
+| `muted` | `oklch(0.975 0.005 248.127)` | `#F4F7FA` | Light blue-gray, used for table hover (100% opacity) |
+| `overlay` | `oklch(0.466 0.027 271.633)` | `rgb(84, 89, 105)` | Dialog backdrop |
+| `placeholder-icon` | `oklch(0.844 0.026 255.600)` | `#C1CDDD` | Placeholder image icons |
+| `sidebar-accent` | `oklch(0.975 0.005 248.127)` | `#F4F7FA` | Same as muted — sidebar hover matches table hover |
 
 ### Adding project-specific tokens
 
-When a project needs a color that doesn't fit the existing tokens (e.g., `warning`, `success`, `info`), add it following the same pattern:
+When a project needs a color that doesn't fit the existing tokens, add it following the same pattern:
 
 ```css
 /* In :root */
---warning: oklch(0.84 0.16 84);
---warning-foreground: oklch(0.28 0.07 46);
-
-/* In .dark */
---warning: oklch(0.41 0.11 46);
---warning-foreground: oklch(0.99 0.02 95);
+--my-token: oklch(0.84 0.16 84);
 
 /* In @theme inline */
---color-warning: var(--warning);
---color-warning-foreground: var(--warning-foreground);
+--color-my-token: var(--my-token);
+/* OR define directly: */
+--color-my-token: oklch(0.84 0.16 84);
 ```
 
-This makes `bg-warning`, `text-warning-foreground`, etc. available as utility classes.
+This makes `bg-my-token`, `text-my-token`, etc. available as utility classes.
 
 ### Why OKLCH
 
 Tailwind v4 and shadcn/ui use OKLCH as the default color format. OKLCH provides perceptually uniform color manipulation — lightness changes look consistent across hues. Use OKLCH for all new tokens. Tools like [oklch.com](https://oklch.com) help pick values.
+
+---
+
+## Global base styles
+
+### Container
+
+Content max-width is **1280px** visible content + padding = **1360px** container:
+
+```css
+@utility container {
+  max-width: 1360px;
+  margin-inline: auto;
+}
+```
+
+Pages use `className="container p-10"` which gives 40px padding each side (80px total), resulting in 1280px visible content.
+
+### Cursor pointer
+
+All clickable elements have cursor pointer by default:
+
+```css
+@layer base {
+  button,
+  [role='button'],
+  a,
+  [type='submit'],
+  [type='reset'],
+  [type='button'] {
+    cursor: pointer;
+  }
+}
+```
 
 ---
 
@@ -236,11 +129,10 @@ All typography uses Tailwind utility classes. No custom typography components or
 
 | Level | Tailwind classes | When to use |
 |-------|-----------------|-------------|
-| Page title | `text-3xl font-bold tracking-tight` | One per page. Main page heading (`<h1>`). |
-| Section title | `text-2xl font-semibold tracking-tight` | Major section within a page (`<h2>`). |
-| Subsection title | `text-xl font-semibold` | Subsection or card group title (`<h3>`). |
-| Card title | `text-lg font-medium` | Card headers, dialog titles (`<h4>`). |
-| Label title | `text-base font-medium` | Form section labels, small group titles. |
+| Page title | `text-2xl font-bold` | One per page. Main page heading (`<h1>`). |
+| Detail page title | `text-[28px] font-bold leading-none` | Detail page entity name. |
+| Section title | `text-xl font-bold` | Major section within a page (`<h2>`). |
+| Submodule label | `text-[13px] font-medium uppercase text-muted-foreground` | Submodule type indicator (e.g., "VARIEDADE"). |
 
 ### Body text scale
 
@@ -249,134 +141,177 @@ All typography uses Tailwind utility classes. No custom typography components or
 | Body default | `text-sm` | Default body text, table cells, form inputs. |
 | Body small | `text-xs text-muted-foreground` | Captions, help text, metadata, timestamps. |
 | Body large | `text-base` | Emphasized paragraphs, hero descriptions. |
+| Field label | `text-[14px] text-muted-foreground` | Inline field labels in submodule detail pages. |
+| Field value | `text-[14px]` | Field values (use `text-primary` for links). |
 
 ### Rules
 
-- **One `<h1>` per page** — always uses the "Page title" scale
+- **One `<h1>` per page** — always uses the page title or detail page title scale
 - **Heading hierarchy must not skip levels** — no `<h1>` followed by `<h3>`
 - **Body text defaults to `text-sm`** — this is the base size for all content
 - **`text-muted-foreground` for secondary text** — never use `text-gray-*` or `opacity-*`
-- **`font-bold` only for page titles** — sections use `font-semibold`, cards use `font-medium`
-- **Never use arbitrary font sizes** (`text-[17px]`) — stick to the scale
-
-### Example
-
-```tsx
-<main>
-  <h1 className="text-3xl font-bold tracking-tight">Animals</h1>
-
-  <section>
-    <h2 className="text-2xl font-semibold tracking-tight">Active</h2>
-
-    <div className="rounded-lg border bg-card p-4">
-      <h3 className="text-lg font-medium">Holstein #4521</h3>
-      <p className="text-sm">Weight: 450kg</p>
-      <p className="text-xs text-muted-foreground">Last updated: 2 hours ago</p>
-    </div>
-  </section>
-</main>
-```
+- **`font-bold` for page/section titles and action buttons**
 
 ---
 
 ## Dark mode
 
-Dark mode is always supported via `next-themes`, even if the project doesn't expose a theme toggle to the user. This ensures the design system is ready for dark mode from day one.
-
-### Setup
-
-```tsx
-// src/app/layout.tsx
-import { ThemeProvider } from 'next-themes'
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en" suppressHydrationWarning>
-      <body>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-        </ThemeProvider>
-      </body>
-    </html>
-  )
-}
-```
-
-### How it works
-
-- `next-themes` adds/removes the `dark` class on `<html>`
-- `.dark` selector in `globals.css` overrides the `:root` variables
-- All components automatically adapt — no per-component dark mode logic
-- `defaultTheme="light"` makes light the default. Change to `"system"` to follow OS preference.
+Dark mode is always supported via `next-themes`, even if the project doesn't expose a theme toggle to the user.
 
 ### Rules
 
 - Never use `dark:` variant in component classes — all dark mode is handled via CSS variable overrides
 - Every new color token must have both `:root` and `.dark` values
-- Test dark mode when adding new tokens — colors that look good in light may not work in dark
+- Test dark mode when adding new tokens
+
+---
+
+## Component-specific patterns
+
+### Button
+
+Default size uses compact padding: `px-2 py-1 has-[>svg]:px-2`. Action buttons in detail pages use `font-bold`.
+
+### Dialog/Modal
+
+- Padding: `p-4` (16px)
+- Overlay: `bg-overlay/50`
+- Confirmation button gap: `gap-2` (8px)
+- Destructive confirmation buttons use `variant="destructive"`
+
+### Popover (actions menu)
+
+- Trigger button: `size-7` (28×28)
+- Content padding: `p-0.5` (2px)
+- Destructive options (e.g., delete) use `text-destructive`
+- All destructive actions must open a confirmation dialog
+
+### Table
+
+- Row hover: `bg-muted` (100% opacity) — applied only on body rows, **not** on header rows
+- Body rows use `group/row` class for descendant hover effects
+- Image column placeholder: `size-10` (40×40) container, `rounded-[6px]`, `bg-muted`, icon `size-4` (16×16) with `text-placeholder-icon`
+- On row hover, placeholder container gets `border-placeholder-icon`
+- Actions column uses `meta: { isLast: true }` with `stopPropagation` to prevent row click
+
+### Sidebar
+
+- Active sub-item: `font-bold text-primary` (text + icon), **no background change**
+- Active parent item: **no background change** when child is selected
+- Hover background: `bg-sidebar-accent` (same as muted / table hover)
+
+### Placeholder images
+
+Used in tables and detail page headers for entities without actual images:
+
+| Context | Container size | Border radius | Icon size | Icon color |
+|---------|---------------|---------------|-----------|------------|
+| Table row | `size-10` (40×40) | `rounded-[6px]` (6px) | `size-4` (16×16) | `text-placeholder-icon` |
+| Detail header | `size-14` (56×56) | `rounded-md` | 16px | `text-placeholder-icon` |
+
+Container uses `bg-muted`. In tables, adds `border border-transparent group-hover/row:border-placeholder-icon` for hover effect.
 
 ---
 
 ## Layout components
 
-Layout components (e.g., `PageHeader`, `PageContent`, `Sidebar`, `Container`) are project-specific — they depend on the application's navigation structure, which varies per project.
+### DetailLayout
 
-When a project defines layout components, document them in `docs/coding-patterns/frontend/layout.md` covering:
-
-- Component names and file locations
-- Where each component is used (which routes/pages)
-- Props and variants
-- Responsive behavior
-- How they compose together (nesting rules)
-
-Until that document exists, pages compose layout directly using semantic HTML and Tailwind utilities:
+12-column grid with 9/3 split for main content and sidebar:
 
 ```tsx
-<main className="mx-auto max-w-7xl px-4 py-8">
-  <header className="mb-8">
-    <h1 className="text-3xl font-bold tracking-tight">Page Title</h1>
-  </header>
-  <section>
-    {/* content */}
-  </section>
-</main>
+<DetailLayout
+  header={<DetailHeader ... />}
+  main={/* 9 columns */}
+  sidebar={/* 3 columns */}
+/>
+```
+
+### DetailHeader
+
+Shared header for detail pages with breadcrumbs, icon placeholder, title, badge, and actions:
+
+```tsx
+<DetailHeader
+  breadcrumbs={[{ href: '/crop-types', label: 'Tipos de Cultura' }]}
+  backHref={`/crop-types/${id}`}
+  backLabel={cropType.name}
+  title="Variedades"
+  icon={Grape}           // optional — omit to hide placeholder image
+  className="pb-2"       // optional — override default pb-6
+  actions={<Button>...</Button>}
+/>
+```
+
+- `icon` is optional — when omitted, the 56×56 placeholder container is not rendered
+- `className` allows overriding the default `pb-6` padding
+
+### DetailSection
+
+Section container with title, optional link, and optional action button:
+
+```tsx
+<DetailSection
+  title="Variedades"
+  linkHref={`/crop-types/${id}/varieties`}
+  linkLabel="Examinar mais itens"
+  actions={<Button size="icon" className="size-7">...</Button>}
+>
+  {/* content */}
+</DetailSection>
+```
+
+### EmptyState
+
+- Listing pages: default `py-30` (120px)
+- Detail page sections: `className="py-15"` (60px)
+
+---
+
+## Submodule detail pages
+
+Sub-entities in a 1-N relationship (e.g., varieties under crop-types) use a different layout than top-level detail pages:
+
+- **No `DetailLayout`** — no sidebar column, no grid
+- **No placeholder image** in header
+- **No breadcrumbs** — replaced by a type label with icon
+- **Custom header** with: icon (`Rows4`, 12×12) + entity type label (uppercase, 13px, `text-muted-foreground font-medium`) + title below (8px gap)
+- **Separator** below header: 8px gap above (`pb-2`), 16px gap below (`mb-4`)
+- **Inline fields** after separator: label (`text-[14px] text-muted-foreground`) + value 8px below (`gap-2`), links use `text-primary`
+- **Multiple fields** in a row separated by `<Separator orientation="vertical" />` with `mx-5` (20px gap)
+- **32px gap** (`mb-8`) between fields row and next section (e.g., auditoria)
+- Actions buttons aligned to bottom (`items-end`) of header
+
+```tsx
+<header className="flex shrink-0 items-end justify-between pb-2">
+  <div className="flex flex-col gap-2">
+    <div className="flex items-center gap-2">
+      <Rows4 size={12} className="text-muted-foreground" />
+      <span className="text-[13px] font-medium uppercase text-muted-foreground">
+        Variedade
+      </span>
+    </div>
+    <h1 className="text-[28px] font-bold leading-none">{name}</h1>
+  </div>
+  <div className="flex items-end gap-2">{actions}</div>
+</header>
+<Separator className="mb-4" />
+<div className="mb-8 flex items-start">
+  {/* fields with vertical separators between them */}
+</div>
 ```
 
 ---
 
-## Styleguide
+## i18n
 
-By default, the boilerplate does **not** include a formal styleguide tool. The design system is documented in this file and enforced through coding patterns.
+The frontend is responsible for all user-facing text. All UI text is in **Portuguese (pt-BR)**:
 
-### Default approach (no extra tooling)
-
-- Color tokens, typography scale, and component patterns are defined here
-- Claude reads this file before creating any component
-- Consistency is maintained through coding pattern compliance checks
-
-### Optional: Storybook
-
-For projects that need a visual component catalog (large teams, designer handoff, complex UI):
-
-1. Install Storybook: `pnpm dlx storybook@latest init`
-2. Write stories for `shared/components/ui/` primitives
-3. Domain components do NOT need stories — they change too frequently
-4. Add `pnpm storybook` to the Commands section in `CLAUDE.md`
-
-### Optional: `/styleguide` page
-
-For projects that want a lightweight visual reference without extra dependencies:
-
-1. Create `src/app/(private)/styleguide/page.tsx`
-2. Render all color tokens, typography scale, and shared UI components
-3. Gate behind auth or feature flag so it doesn't ship to production
-
-Choose the approach that fits the project's needs and document the decision in `docs/architecture.md` under the Decision Log.
+- Button labels: "Criar variedade", "Editar Tipo de Cultura", "Excluir Colheita", "Voltar", "Salvar alterações"
+- Confirmation messages: "Tem certeza que deseja excluir esta variedade? Esta ação não pode ser desfeita."
+- Toast messages: "Criando variedade...", "Excluindo colheita...", "Salvando..."
+- Empty states: "Nenhuma variedade cadastrada", "Nenhum registro de auditoria"
+- Date formatting: `pt-BR` locale with `dateStyle: 'long'`
 
 ---
 
@@ -401,13 +336,17 @@ shadcn/ui components live in `src/shared/components/ui/`. They are the building 
 - **OKLCH color format** — for all new tokens
 - **Semantic tokens always** — never use raw colors (`red-500`, `blue-600`). Use `primary`, `destructive`, `warning`, etc.
 - **Dark mode always ready** — every token has `:root` and `.dark` values, `next-themes` is always configured
-- **Typography scale is fixed** — follow the heading/body scale defined above. No arbitrary sizes.
 - **One `<h1>` per page** — heading hierarchy must be sequential
 - **`text-sm` is the default body size** — not `text-base`
-- **Layout is project-specific** — document in `layout.md` when defined
-- **No formal styleguide by default** — coding patterns are the source of truth. Add Storybook or `/styleguide` page if the project needs it.
+- **Container is 1360px** (1280px content + 80px padding)
+- **All clickable elements have cursor pointer** via base layer
+- **Table hover is 100% opacity `bg-muted`** — only on body rows, not headers
+- **Sidebar active items have no background** — only text/icon color changes
+- **Placeholder images use `text-placeholder-icon`** — never `text-muted-foreground`
+- **All UI text in Portuguese (pt-BR)** — backend never returns translated strings
+- **Destructive actions always require confirmation** — red text + confirmation dialog
 - **shadcn/ui primitives are immutable** — wrap, don't modify
-- **Never use `!important`** — no `!h-4`, `!p-0`, `!text-sm` or any Tailwind `!` prefix. If specificity is needed, restructure the HTML or use more specific selectors.
+- **Never use `!important`** — no `!h-4`, `!p-0`, `!text-sm` or any Tailwind `!` prefix
 
 ---
 
@@ -424,44 +363,32 @@ shadcn/ui components live in `src/shared/components/ui/`. They are the building 
 // CORRECT: use token that auto-switches
 <div className="bg-background">Content</div>
 
-// WRONG: arbitrary font size
-<h2 className="text-[22px] font-bold">Title</h2>
-// CORRECT: follow the typography scale
-<h2 className="text-2xl font-semibold tracking-tight">Title</h2>
-
-// WRONG: inconsistent heading weight
-<h1 className="text-3xl font-semibold">Page</h1>  // should be font-bold
-<h2 className="text-2xl font-bold">Section</h2>    // should be font-semibold
-
 // WRONG: using opacity for muted text
 <p className="text-sm opacity-50">Help text</p>
 // CORRECT: use muted-foreground token
 <p className="text-xs text-muted-foreground">Help text</p>
 
-// WRONG: hardcoding color values in CSS
-.custom-badge { background-color: #ef4444; }
-// CORRECT: reference the token
-.custom-badge { background-color: var(--destructive); }
+// WRONG: table hover on header rows
+<TableRow className="hover:bg-muted">  // hover is only on body rows
+// CORRECT: hover applied via TableBody [&_tr:hover]:bg-muted
 
-// WRONG: skipping heading levels
-<h1>Page</h1>
-<h3>Subsection</h3>  // skipped h2
+// WRONG: using text-muted-foreground for placeholder icons
+<Wheat className="text-muted-foreground" />
+// CORRECT: use dedicated token
+<Wheat className="text-placeholder-icon" />
 
-// WRONG: multiple h1 on the same page
-<h1>Title A</h1>
-<h1>Title B</h1>  // only one h1 per page
+// WRONG: sidebar active item with background
+data-[active=true]:bg-sidebar-accent  // no bg on active
+// CORRECT: only text color
+data-[active=true]:text-primary data-[active=true]:font-bold
 
-// WRONG: modifying shadcn/ui source
-// src/shared/components/ui/button.tsx — editing directly
-// CORRECT: wrap if customization is needed
-// src/shared/components/custom-button.tsx — wraps Button with extra logic
+// WRONG: English text in UI
+<Button>Delete</Button>
+// CORRECT: Portuguese
+<Button>Excluir Variedade</Button>
 
-// WRONG: defining colors in tailwind.config.ts
-module.exports = { theme: { colors: { primary: '#000' } } }
-// CORRECT: define in globals.css via :root + @theme inline
-
-// WRONG: using !important via Tailwind prefix
-<Separator className="!h-4" />
-// CORRECT: restructure to avoid specificity conflicts
-<Separator className="h-4" />
+// WRONG: destructive action without confirmation
+onClick={() => deleteEntity(id)}
+// CORRECT: open confirmation dialog first
+onClick={() => setDeleteDialogOpen(id)}
 ```
