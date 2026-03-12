@@ -34,5 +34,6 @@ The `health-check-counter` tracks how many features have been merged since the l
 <!-- Add gotchas discovered during development. Remove them when they are resolved or no longer relevant. -->
 <!-- Format: one line per gotcha, prefixed with dash. Be specific — include file, library, or context. -->
 
-- `crop-types/[id]` page needs rework: currently shows varieties list, should show crop type detail page. Requires `findCropTypeById` endpoint (backend + frontend) to be created first.
+- Investigate and implement listing filters (search, sorting, pagination) across all domains.
+- Audit log UI needs review — verify completeness of audit trail coverage and consider adding filtering/pagination.
 - Refresh token flow not working — access token expires after 1 hour and is not being refreshed automatically. Investigate frontend refresh logic and fix.
