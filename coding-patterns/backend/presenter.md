@@ -137,6 +137,68 @@ export class <Entity>Presenter {
 
 ---
 
+## Structure — audit log presenter (with ID resolution)
+
+The audit log presenter accepts extra params for actor name and a resolved names map. It enriches `changes` fields by replacing raw IDs with human-readable names from the map.
+
+```ts
+import type { AuditLog } from '@/domain/audit-log/enterprise/entities/audit-log'
+import { isFromToField } from '@/shared/utils/is-from-to-field'
+
+export class AuditLogPresenter {
+  static toHTTP(
+    log: AuditLog,
+    actorName?: string,
+    resolvedNames?: Map<string, string>,
+  ) {
+    return {
+      id: log.id.toString(),
+      actorId: log.actorId,
+      actorName: actorName ?? null,
+      action: log.action,
+      entity: log.entity,
+      entityId: log.entityId,
+      changes: resolvedNames
+        ? AuditLogPresenter.enrichChanges(log.changes, resolvedNames)
+        : log.changes,
+      createdAt: log.createdAt,
+    }
+  }
+
+  private static enrichChanges(
+    changes: Record<string, unknown> | null,
+    resolvedNames: Map<string, string>,
+  ): Record<string, unknown> | null {
+    if (!changes) return null
+
+    const enriched: Record<string, unknown> = {}
+
+    for (const [key, value] of Object.entries(changes)) {
+      if (isFromToField(value)) {
+        enriched[key] = {
+          from: typeof value.from === 'string'
+            ? resolvedNames.get(value.from) ?? value.from
+            : value.from,
+          to: typeof value.to === 'string'
+            ? resolvedNames.get(value.to) ?? value.to
+            : value.to,
+        }
+      } else {
+        enriched[key] = typeof value === 'string'
+          ? resolvedNames.get(value) ?? value
+          : value
+      }
+    }
+
+    return enriched
+  }
+}
+```
+
+The controller passes `actorNames.get(log.actorId)` and the full `resolvedNames` map. The presenter tries to resolve every string value — if not in the map, it falls back to the raw value.
+
+---
+
 ## Date-only fields
 
 When a field stores only a date (no time) — e.g. `@db.Date` in Prisma — format as ISO date string to avoid timezone shifting on the frontend:

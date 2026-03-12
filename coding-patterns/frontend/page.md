@@ -254,6 +254,8 @@ Sub-entities in a 1-N relationship use a simplified layout without the grid or s
 
 ```tsx
 // src/app/(private)/<parent>/[id]/<sub-entity>/[subId]/page.tsx
+import { ChevronLeft } from 'lucide-react'
+
 export default async function <SubEntity>DetailPage(
   props: NextPageProps<{ id: string; subId: string }>,
 ) {
@@ -271,12 +273,16 @@ export default async function <SubEntity>DetailPage(
       <div className="container flex h-full flex-col p-10" data-testid="<sub-entity>-detail-page">
         <header className="flex shrink-0 items-end justify-between pb-2">
           <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <Rows4 size={12} className="text-muted-foreground" />
-              <span className="text-[13px] font-medium uppercase text-muted-foreground">
-                <Sub-Entity Type>
+            <Link
+              href={`/<parents>/${parentId}/<sub-entities>`}
+              className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+              data-testid="<sub-entity>-back-link"
+            >
+              <ChevronLeft size={12} />
+              <span className="text-[13px] font-medium uppercase">
+                <Sub-Entities>
               </span>
-            </div>
+            </Link>
             <h1 className="text-[28px] font-bold leading-none">{subEntity.name}</h1>
           </div>
           <div className="flex items-end gap-2">{/* actions */}</div>
@@ -295,25 +301,36 @@ export default async function <SubEntity>DetailPage(
 }
 ```
 
+The back-link uses `ChevronLeft` + uppercase plural label (e.g. "VARIEDADES") linking to the sub-entity listing page. This provides a clear navigation path back to the listing without using breadcrumbs.
+
 ---
 
 ## Sub-entity listing page
 
-When a sub-entity has its own listing page under the parent, use `DetailHeader` with breadcrumbs:
+When a sub-entity has its own listing page under the parent, use `DetailHeader` with breadcrumbs. Omit the `icon` prop and add a `Separator` after the header — this gives the listing a clean, compact look distinct from detail pages:
 
 ```tsx
 // src/app/(private)/<parent>/[id]/<sub-entities>/page.tsx
+import { Separator } from '@/shared/components/ui/separator'
+
 <DetailHeader
   breadcrumbs={[{ href: '/<parents>', label: '<Parents>' }]}
   backHref={`/<parents>/${id}`}
   backLabel={parent.name}
   title="<Sub-Entities>"
-  icon={<LucideIcon>}
+  className="pb-2"
   actions={<Button>Adicionar <Sub-Entity></Button>}
 />
+
+<Separator className="mb-4" />
 ```
 
-Creating a sub-entity from this page always pre-selects the parent entity (disabled select).
+**Key patterns:**
+- No `icon` prop — listing pages don't show the placeholder icon container
+- `className="pb-2"` — tighter spacing between header and separator
+- `<Separator className="mb-4" />` — visual break before table/content
+- `DetailHeader` uses `items-end` alignment when no icon, so action buttons align to the bottom of the title
+- Creating a sub-entity from this page always pre-selects the parent entity (disabled select)
 
 ---
 

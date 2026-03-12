@@ -158,6 +158,64 @@ async handle(event: <Entity>UpdatedEvent): Promise<void> {
 
 ---
 
+## 2b. Subscriber with domain enrichment (resolving names at write time)
+
+When a created event carries foreign key IDs (e.g. `cropTypeId` on a variety), the subscriber resolves them to human-readable names before storing the audit log. This makes the audit data self-contained — the read path doesn't need to re-resolve historical IDs.
+
+```ts
+@Injectable()
+export class On<Entity>Created implements EventHandler {
+  private readonly logger = new Logger(On<Entity>Created.name)
+
+  constructor(
+    private createAuditLog: CreateAuditLogUseCase,
+    private <related>Repository: <Related>Repository,  // injected for name resolution
+  ) {
+    this.setupSubscriptions()
+  }
+
+  setupSubscriptions(): void {
+    DomainEvents.register(this.handle.bind(this), <Entity>CreatedEvent.name)
+  }
+
+  async handle(event: <Entity>CreatedEvent): Promise<void> {
+    const { <entity>, actorId } = event
+
+    try {
+      // Resolve foreign key to name
+      const related = await this.<related>Repository.findById(
+        <entity>.<related>Id.toString(),
+      )
+
+      await this.createAuditLog.execute({
+        actorId,
+        action: '<domain>:created',
+        entity: '<ENTITY_CONSTANT>',
+        entityId: <entity>.id.toString(),
+        changes: {
+          name: <entity>.name,
+          <related>Id: <entity>.<related>Id.toString(),
+          <related>: { from: null, to: related?.name ?? null },  // resolved name stored alongside ID
+        },
+      })
+    } catch (error) {
+      this.logger.error(
+        `Failed to handle ${<Entity>CreatedEvent.name} for ${<entity>.id.toString()}`,
+        error,
+      )
+    }
+  }
+}
+```
+
+**Rules for enrichment:**
+- Always store the raw ID field (`cropTypeId`) alongside the resolved name field (`cropType: { from: null, to: "Soja" }`)
+- Use `findById` for single lookups (created events have one value per FK)
+- The resolved name is stored as a `{ from, to }` field — consistent with update events
+- If resolution fails (entity deleted), store `null` — never block the audit log creation
+
+---
+
 ## 3. Events Module (NestJS wiring)
 
 ```ts
@@ -171,7 +229,11 @@ import { CreateAuditLogUseCase } from '@/domain/audit-log/application/use-cases/
 import { AuditLogDatabaseModule } from '@/infra/database/prisma/repositories/audit-log/audit-log-database.module'
 
 @Module({
-  imports: [AuditLogDatabaseModule],
+  imports: [
+    AuditLogDatabaseModule,
+    // Import domain database modules when subscribers need to resolve foreign IDs
+    // e.g. CropDatabaseModule when variety/harvest subscribers resolve cropTypeId → name
+  ],
   providers: [
     On<Entity>Created,
     On<Entity>Updated,

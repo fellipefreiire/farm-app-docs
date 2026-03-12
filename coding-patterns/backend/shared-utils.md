@@ -10,6 +10,8 @@ Small, pure utility functions used across the application. No NestJS dependencie
 src/shared/utils/with-timeout.ts         ← race a promise against a timeout
 src/shared/utils/retry-with-backoff.ts   ← retry with exponential backoff
 src/shared/utils/sanitize-html.ts        ← strip all HTML tags from input
+src/shared/utils/is-from-to-field.ts     ← type guard for { from, to } change tracking fields
+src/shared/utils/extract-change-ids.ts  ← extract IDs from audit log changes by field name
 ```
 
 ---
@@ -91,6 +93,35 @@ const schema = z.object({
 
 ---
 
+## is-from-to-field
+
+Type guard for `{ from, to }` change tracking fields. Used in audit log presenters and use cases to identify before/after change values.
+
+```ts
+// src/shared/utils/is-from-to-field.ts
+type FromToField = { from: unknown; to: unknown }
+
+export function isFromToField(value: unknown): value is FromToField {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'from' in value &&
+    'to' in value
+  )
+}
+```
+
+Usage:
+```ts
+import { isFromToField } from '@/shared/utils/is-from-to-field'
+
+if (isFromToField(value)) {
+  // value is typed as { from: unknown; to: unknown }
+}
+```
+
+---
+
 ## Rules
 
 - Utils are pure functions — no NestJS decorators, no DI, no side effects
@@ -98,6 +129,7 @@ const schema = z.object({
 - One function per file — keeps imports clean
 - Always generic — never domain-specific logic in utils
 - `sanitize()` must be applied to all user-facing string inputs in Zod schemas (via `.transform(sanitize)`)
+- **DRY is mandatory** — if a function (even small ones like type guards) is used in 2+ files, extract it to `src/shared/utils/`. Never duplicate across files.
 
 ---
 

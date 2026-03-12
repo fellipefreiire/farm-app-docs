@@ -296,6 +296,56 @@ Cache invalidation happens in server actions via `updateTag('<entities>')` — s
 
 ---
 
+## Sub-resource audit logs (per-entity)
+
+Each domain owns its audit log API function. The endpoint is a sub-resource of the entity (`/v1/<entities>/:id/audit-logs`), but the function lives in the domain's `api/` folder and reuses the shared audit-log schemas.
+
+```ts
+// src/domains/<domain>/api/list-<entity>-audit-logs.ts
+import { api } from '@/shared/http/api-client'
+import { handleHttpError } from '@/shared/http/errors/utils/handle-http-error'
+
+import {
+  type ListAuditLogsResponse,
+  listAuditLogsResponseSchema,
+} from '@/domains/audit-log/schemas'
+
+type ListAuditLogsParams = {
+  cursor?: string
+  limit?: number
+}
+
+export async function list<Entity>AuditLogs(
+  id: string,
+  params: ListAuditLogsParams = {},
+): Promise<ListAuditLogsResponse> {
+  try {
+    const searchParams = new URLSearchParams()
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        searchParams.append(key, String(value))
+      }
+    })
+
+    const response = await api
+      .get(`v1/<entities>/${id}/audit-logs?${searchParams.toString()}`)
+      .json()
+
+    return listAuditLogsResponseSchema.parse(response)
+  } catch (error) {
+    handleHttpError(error)
+  }
+}
+```
+
+**Key patterns:**
+- The function lives in the **entity's domain** (e.g. `domains/crop/crop-types/api/`), not in `domains/audit-log/api/`
+- Schemas (`ListAuditLogsResponse`, `listAuditLogsResponseSchema`) are imported from the shared `domains/audit-log/schemas/` — reused by all domains
+- The shared `domains/audit-log/` folder keeps components (`AuditDiffModal`, `LimitedAuditLogs`, `AuditLogTable`), schemas, and utils — only the API functions are per-domain
+
+---
+
 ## Barrel export
 
 ```ts
