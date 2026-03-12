@@ -10,6 +10,9 @@ Shared utilities are reusable across all domains. They live in `src/shared/` and
 src/shared/
   http/
     api-client.ts                              ← ky HTTP client instance
+    auth.ts                                    ← auth helpers (token check, refresh, redirect)
+    decode-jwt.ts                              ← JWT payload decoder (base64url → JSON)
+    refresh-tokens.ts                          ← client-side refresh via /api/auth/refresh
     errors/
       api.error.ts                             ← base API error class
       bad-request.error.ts                     ← 400 error
@@ -24,6 +27,7 @@ src/shared/
     schemas/
       pagination.schema.ts                     ← offset + cursor pagination schemas
       message-response.schema.ts               ← message-only response ({ message })
+      refresh-response.schema.ts               ← refresh endpoint response schema
   types/
     global.d.ts                                ← global types (NextPageProps, SearchParams)
   utils/
@@ -32,9 +36,17 @@ src/shared/
   components/
     ui/                                        ← design system primitives (shadcn/ui)
     fields/                                    ← form field components (InputField, SelectField, etc.)
+    search-input.tsx                           ← debounced search synced with URL
+    filter-select.tsx                          ← select dropdown synced with URL
+    sortable-header.tsx                        ← clickable column header for sorting
+    pagination-controls.tsx                    ← prev/next buttons with page indicator
+    table-toolbar.tsx                          ← layout container for filters above tables
+    empty-state.tsx                            ← empty state with icon and message
+    table-tabs.tsx                             ← tab navigation for filter presets
   constants/
     messages.ts                                ← DEFAULT_ERROR_MESSAGE
     cookies.ts                                 ← cookie name constants
+    auth.ts                                    ← REFRESH_THRESHOLD_SECONDS
   hooks/                                       ← shared React hooks
 ```
 
@@ -42,15 +54,19 @@ src/shared/
 
 ## HTTP client
 
-The HTTP client is a pre-configured `ky` instance with JWT injection and error class mapping.
+The HTTP client is a pre-configured `ky` instance with JWT injection, automatic token refresh, and error class mapping.
 
 ```ts
 // src/shared/http/api-client.ts
-import { type CookiesFn, getCookie } from 'cookies-next'
 import ky from 'ky'
 
-import { COOKIE_NAMES } from '@/shared/constants/cookies'
-
+import {
+  ensureRefresh,
+  getAccessToken,
+  getCookiesFn,
+  isTokenExpiringSoon,
+  redirectToLogin,
+} from './auth'
 import {
   ApiError,
   BadRequestError,
@@ -59,21 +75,47 @@ import {
   UnauthorizedError,
 } from './errors'
 
+const isServer = typeof window === 'undefined'
+
 export const api = ky.create({
   prefixUrl: process.env.NEXT_PUBLIC_API_URL,
+  retry: {
+    limit: isServer ? 0 : 1,
+    statusCodes: [401],
+  },
   hooks: {
     beforeRequest: [
       async (request) => {
-        let cookieStore: CookiesFn | undefined
+        const cookiesFn = await getCookiesFn()
+        let accessToken = await getAccessToken(cookiesFn)
 
-        if (typeof window === 'undefined') {
-          const { cookies: serverCookies } = await import('next/headers')
-          cookieStore = serverCookies
+        if (!isServer && accessToken && isTokenExpiringSoon(accessToken)) {
+          const success = await ensureRefresh()
+
+          if (!success) {
+            redirectToLogin()
+            return
+          }
+
+          accessToken = await getAccessToken(cookiesFn)
         }
 
-        const accessToken = await getCookie(COOKIE_NAMES.ACCESS_TOKEN, {
-          cookies: cookieStore,
-        })
+        if (accessToken) {
+          request.headers.set('Authorization', `Bearer ${accessToken}`)
+        }
+      },
+    ],
+    beforeRetry: [
+      async ({ request }) => {
+        const success = await ensureRefresh()
+
+        if (!success) {
+          redirectToLogin()
+          throw new UnauthorizedError({})
+        }
+
+        const cookiesFn = await getCookiesFn()
+        const accessToken = await getAccessToken(cookiesFn)
 
         if (accessToken) {
           request.headers.set('Authorization', `Bearer ${accessToken}`)
@@ -81,13 +123,17 @@ export const api = ky.create({
       },
     ],
     afterResponse: [
-      async (_request, _options, response) => {
+      async (_request, _options, response, { retryCount }) => {
         if (!response.ok) {
           let body: unknown = {}
 
           try {
             body = await response.clone().json()
           } catch {}
+
+          if (response.status === 401 && retryCount === 0 && !isServer) {
+            return ky.retry()
+          }
 
           if (response.status === 400) throw new BadRequestError(body)
           if (response.status === 401) throw new UnauthorizedError(body)
@@ -105,8 +151,10 @@ export const api = ky.create({
 ```
 
 **Rules:**
-- `beforeRequest` injects the JWT from cookies — works in both server and client components
-- `afterResponse` maps HTTP status codes to custom error classes — API functions catch these via `handleHttpError`
+- `beforeRequest` injects the JWT from cookies — works in both server and client components. On client-side, also checks if token is expiring soon and triggers preventive refresh
+- `afterResponse` maps HTTP status codes to custom error classes. On first 401 (client-side only), returns `ky.retry()` to trigger a retry with fresh tokens
+- `beforeRetry` calls `ensureRefresh()` to get new tokens before retrying the request
+- Server-side has `retry.limit: 0` — no retries, no refresh attempts. Server-side refresh is handled by the proxy
 - Cookie names are centralized in `shared/constants/cookies.ts` — replace the project prefix when setting up a new project
 
 ---
@@ -346,6 +394,128 @@ The `id` parameter replaces the loading toast in-place — the user sees a smoot
 
 ---
 
+## Authentication and token refresh
+
+The auth system uses three cookies and two refresh mechanisms (proxy + HTTP client). All auth helpers live in `shared/http/auth.ts`.
+
+### Cookies
+
+```ts
+// src/shared/constants/cookies.ts
+const PROJECT_PREFIX = 'farm-app'
+
+export const COOKIE_NAMES = {
+  ACCESS_TOKEN: `${PROJECT_PREFIX}_access-token`,
+  REFRESH_TOKEN: `${PROJECT_PREFIX}_refresh-token`,
+  CSRF_TOKEN: `${PROJECT_PREFIX}_csrf-token`,
+} as const
+```
+
+| Cookie | Duration | httpOnly | Purpose |
+|--------|----------|----------|---------|
+| `farm-app_access-token` | 6 min | no | JWT sent as Bearer token in API requests |
+| `farm-app_refresh-token` | 7 days | yes | Used to obtain new access + refresh tokens |
+| `farm-app_csrf-token` | session | no | Double-submit CSRF protection for refresh endpoint |
+
+### Auth helpers
+
+```ts
+// src/shared/http/auth.ts
+```
+
+| Function | Purpose |
+|----------|---------|
+| `getCookiesFn()` | Returns the cookie store — `next/headers` cookies on server, `undefined` on client (falls back to `document.cookie`) |
+| `getAccessToken(cookiesFn)` | Reads access token from cookies |
+| `isTokenExpiringSoon(token)` | Decodes JWT and checks if `exp` is within `REFRESH_THRESHOLD_SECONDS` (300s = 5 min) |
+| `ensureRefresh()` | Calls `refreshTokens()` with a module-level mutex to prevent concurrent refreshes |
+| `redirectToLogin()` | `window.location.href = '/sign-in'` (client-side only) |
+| `refreshAccessToken(refreshToken, csrfToken?)` | Calls backend `POST /v1/sessions/refresh` directly, validates response with `refreshResponseSchema`, returns parsed result or `null` |
+
+### JWT decoder
+
+```ts
+// src/shared/http/decode-jwt.ts
+export function decodeJwt(token: string): { exp?: number; [key: string]: unknown } | null
+```
+
+Decodes the JWT payload (base64url → JSON). Returns `null` on malformed input. Used by `isTokenExpiringSoon` and the proxy to check token expiry without verifying the signature.
+
+### Client-side refresh
+
+```ts
+// src/shared/http/refresh-tokens.ts
+export async function refreshTokens(): Promise<boolean>
+```
+
+Client-side only (returns `false` on server). Calls `POST /api/auth/refresh` which proxies to the backend and updates cookies server-side.
+
+### Refresh response schema
+
+```ts
+// src/shared/http/schemas/refresh-response.schema.ts
+export const refreshResponseSchema = z.object({
+  accessToken: z.object({
+    token: z.string(),
+    expiresIn: z.number(),
+  }),
+  refreshToken: z.object({
+    token: z.string(),
+    expiresIn: z.number(),
+  }),
+  csrfToken: z.string(),
+  expiresIn: z.number(),
+})
+```
+
+Used by `refreshAccessToken()` in `auth.ts` to validate the backend response. Both the proxy and the API route use `refreshAccessToken()`, so all refresh responses are validated through this schema.
+
+### Proxy (`src/proxy.ts`)
+
+Protects private routes and handles preventive token refresh on navigation.
+
+```ts
+// src/proxy.ts
+import { COOKIE_NAMES } from '@/shared/constants/cookies'
+import { isTokenExpiringSoon, refreshAccessToken } from '@/shared/http/auth'
+```
+
+Logic:
+1. Public routes (`/sign-in`) → pass through
+2. No access token and no refresh token → redirect to `/sign-in`
+3. Access token missing or expiring → call `refreshAccessToken()` → set new cookies on response
+4. Refresh fails → delete cookies, redirect to `/sign-in`
+5. Access token valid → pass through
+
+### API route (`src/app/api/auth/refresh/route.ts`)
+
+Server-side endpoint called by the client-side HTTP client when it needs to refresh tokens. Reads refresh + CSRF cookies, calls `refreshAccessToken()`, updates cookies.
+
+### Sign-in action
+
+The `signIn` server action sets all three cookies after successful authentication:
+- `COOKIE_NAMES.ACCESS_TOKEN` — `maxAge: response.expiresIn`
+- `COOKIE_NAMES.REFRESH_TOKEN` — `httpOnly: true`, `maxAge: response.refreshToken.expiresIn`
+- `COOKIE_NAMES.CSRF_TOKEN` — `httpOnly: false`, `sameSite: 'strict'`
+
+### CSRF protection
+
+The backend refresh endpoint (`POST /v1/sessions/refresh`) is protected by `CsrfGuard`. Both the proxy and the API route must send:
+- `x-csrf-token` header with the CSRF token value
+- `Cookie` header with `farm-app_csrf-token={value}`
+
+The backend validates that the header and cookie values match. After each refresh, the backend returns a new `csrfToken` which must be saved as a cookie for the next refresh.
+
+**Rules:**
+- Cookie names are centralized in `COOKIE_NAMES` — never hardcode cookie names
+- `REFRESH_THRESHOLD_SECONDS` lives in `shared/constants/auth.ts` — the threshold must always be less than the access token duration
+- `refreshAccessToken()` is the single function for calling the backend refresh endpoint — used by both proxy and API route
+- All refresh responses are validated with `refreshResponseSchema` — never trust unvalidated backend responses
+- `ensureRefresh()` uses a module-level mutex (`refreshPromise`) to prevent concurrent refresh calls — only effective on client-side
+- Server-side refresh only happens in the proxy — the HTTP client does not retry on server-side (prevents infinite loops in Server Components)
+
+---
+
 ## Constants
 
 ```ts
@@ -354,6 +524,13 @@ export const DEFAULT_ERROR_MESSAGE = 'An unexpected error occurred. Please try a
 ```
 
 Used in server actions as the fallback error message when the error is not an `ApiError`.
+
+```ts
+// src/shared/constants/auth.ts
+export const REFRESH_THRESHOLD_SECONDS = 300
+```
+
+Time in seconds before token expiry to trigger a preventive refresh (5 minutes). Used by `isTokenExpiringSoon()` in the HTTP client and proxy.
 
 ---
 
@@ -367,6 +544,10 @@ Used in server actions as the fallback error message when the error is not an `A
 - `NextPageProps` and `getSearchParam` are used in pages — they handle Next.js App Router typing quirks
 - `renderToast` is used in form components — always paired with `toast.loading` before the action call
 - `DEFAULT_ERROR_MESSAGE` is used in server actions — never hardcode fallback messages
+- Cookie names are always referenced via `COOKIE_NAMES` constant — never hardcode cookie name strings
+- Auth constants (`REFRESH_THRESHOLD_SECONDS`) live in `shared/constants/auth.ts`
+- `refreshAccessToken()` in `shared/http/auth.ts` is the single point for refresh calls — proxy and API route both use it
+- Sign-in action must set all three cookies (access, refresh, CSRF) — missing any breaks the refresh flow
 
 ---
 
@@ -396,4 +577,19 @@ const page = searchParams.page  // might be string[] — use getSearchParam(sear
 
 // ❌ silent mutations without toast feedback
 const res = await createAction(data)  // missing toast.loading + renderToast
+
+// ❌ hardcoding cookie names
+request.cookies.get('farm-app_access-token')  // use COOKIE_NAMES.ACCESS_TOKEN
+
+// ❌ calling backend refresh endpoint directly in proxy or API route
+const response = await fetch(`${process.env.API_URL}/v1/sessions/refresh`, ...)
+// use refreshAccessToken() from shared/http/auth — it validates with Zod schema
+
+// ❌ setting only access and refresh cookies on sign-in (missing CSRF)
+await setCookie(COOKIE_NAMES.ACCESS_TOKEN, ...)
+await setCookie(COOKIE_NAMES.REFRESH_TOKEN, ...)
+// must also set COOKIE_NAMES.CSRF_TOKEN — without it, refresh flow breaks
+
+// ❌ refreshing tokens on server-side in the HTTP client
+if (isServer) { await ensureRefresh() }  // server-side refresh is handled by proxy only
 ```

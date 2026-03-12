@@ -71,7 +71,7 @@ None in MVP. Infrastructure decisions deferred to post-MVP.
 
 | Concern | Approach |
 |---------|----------|
-| **Authentication** | JWT (access + refresh tokens). All endpoints private by default. `@Public()` decorator for exceptions. |
+| **Authentication** | JWT (access token 6 min + refresh token 7 days) with token rotation. CSRF protection via double-submit cookie. Proxy handles preventive refresh on navigation. HTTP client handles reactive refresh on 401. All endpoints private by default. `@Public()` decorator for exceptions. |
 | **Authorization** | CASL ability factory per role (owner, manager, family). Checked via guard + decorator. |
 | **Validation** | Zod schemas in `ZodValidationPipe` (backend) and `zodResolver` (frontend forms). |
 | **Error handling** | `Either<Error, Result>` in use cases. Domain error filters map to HTTP status codes. |

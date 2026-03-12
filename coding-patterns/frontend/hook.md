@@ -75,6 +75,101 @@ export function usePagination(options: UsePaginationOptions = {}) {
 
 ---
 
+## Filter navigation hook
+
+Central hook for syncing filter state with URL searchParams. Used internally by filter components (`SearchInput`, `FilterSelect`, `SortableHeader`, `PaginationControls`).
+
+```ts
+// src/shared/hooks/use-filter-navigation.ts
+'use client'
+
+import { useCallback } from 'react'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
+
+/** Provides URL-based filter navigation utilities. */
+export function useFilterNavigation() {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
+  // Set a single param. Resets page when changing non-page params.
+  const setParam = useCallback(
+    (key: string, value: string | null) => {
+      const params = new URLSearchParams(searchParams.toString())
+
+      if (value === null || value === '') {
+        params.delete(key)
+      } else {
+        params.set(key, value)
+      }
+
+      if (key !== 'page') {
+        params.delete('page')
+      }
+
+      const query = params.toString()
+      router.push(query ? `${pathname}?${query}` : pathname)
+    },
+    [searchParams, router, pathname],
+  )
+
+  // Set multiple params at once (e.g. sort + order). Single navigation.
+  const setParams = useCallback(
+    (entries: Record<string, string | null>) => {
+      const params = new URLSearchParams(searchParams.toString())
+      let resetsPage = false
+
+      for (const [key, value] of Object.entries(entries)) {
+        if (value === null || value === '') {
+          params.delete(key)
+        } else {
+          params.set(key, value)
+        }
+
+        if (key !== 'page') {
+          resetsPage = true
+        }
+      }
+
+      if (resetsPage) {
+        params.delete('page')
+      }
+
+      const query = params.toString()
+      router.push(query ? `${pathname}?${query}` : pathname)
+    },
+    [searchParams, router, pathname],
+  )
+
+  // Clear all params except those in the preserve list.
+  const clearAll = useCallback(
+    (preserve: string[] = []) => {
+      const params = new URLSearchParams()
+
+      for (const key of preserve) {
+        const value = searchParams.get(key)
+        if (value) {
+          params.set(key, value)
+        }
+      }
+
+      const query = params.toString()
+      router.push(query ? `${pathname}?${query}` : pathname)
+    },
+    [searchParams, router, pathname],
+  )
+
+  return { searchParams, setParam, setParams, clearAll }
+}
+```
+
+**Key behaviors:**
+- `setParam` and `setParams` automatically reset `page` when any non-page param changes — prevents viewing page 5 of a filtered result set that only has 1 page
+- `setParams` batches multiple param changes into a single `router.push` — use for sorting (`sort` + `order` together)
+- `clearAll` removes all params except those in the `preserve` list — useful for a "clear filters" button
+
+---
+
 ## Dialog state hook
 
 ```ts

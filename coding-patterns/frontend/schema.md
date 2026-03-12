@@ -170,6 +170,8 @@ import { <entity>Schema } from './<entity>.schema'
 export const list<Entity>sParamsSchema = z.object({
   page: z.coerce.number().optional(),
   perPage: z.coerce.number().min(1).max(100).optional(),
+  sort: z.string().optional(),
+  order: z.string().optional(),
   search: z.string().optional(),
   active: z.boolean().optional(),
   // add domain-specific filters as needed

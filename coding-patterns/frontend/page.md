@@ -70,21 +70,74 @@ src/app/
 
 ```tsx
 // src/app/(private)/<domain>/page.tsx
+import { Plus, <Icon> } from 'lucide-react'
+import Link from 'next/link'
+
 import { list<Entity>s } from '@/domains/<domain>/api'
-import { <Entity>Table } from '@/domains/<domain>/components'
+import {
+  <Entity>Table,
+  Create<Entity>Sheet,
+  Edit<Entity>Sheet,
+  Delete<Entity>Dialog,
+} from '@/domains/<domain>/components'
+import { EmptyState } from '@/shared/components/empty-state'
+import { PaginationControls } from '@/shared/components/pagination-controls'
+import { SearchInput } from '@/shared/components/search-input'
+import { TableToolbar } from '@/shared/components/table-toolbar'
+import { Button } from '@/shared/components/ui/button'
+import { getSearchParam } from '@/shared/utils/search-params'
 
 export default async function <Entity>sPage(props: NextPageProps) {
   const searchParams = await props.searchParams
 
-  const data = await list<Entity>s({ perPage: 100 })
+  const page = getSearchParam(searchParams.page)
+  const query = getSearchParam(searchParams.query)
+  const sort = getSearchParam(searchParams.sort)
+  const order = getSearchParam(searchParams.order)
+
+  const data = await list<Entity>s({
+    page: page ? Number(page) : undefined,
+    query,
+    sort,
+    order,
+  })
 
   return (
-    <div className="container flex h-full flex-col p-10" data-testid="<entity>s-page">
-      <div className="mb-10 flex justify-between">
-        <h1 className="text-2xl font-bold"><Entity>s</h1>
+    <>
+      <div className="container flex h-full flex-col p-10" data-testid="<entity>s-page">
+        <div className="mb-10 flex justify-between">
+          <h1 className="text-2xl font-bold"><Entity>s</h1>
+          <Button asChild>
+            <Link href="/<entities>?create=<entity>" data-testid="<entity>-create-button">
+              <Plus />
+              Adicionar <Entity>
+            </Link>
+          </Button>
+        </div>
+
+        <TableToolbar>
+          <SearchInput placeholder="Pesquisar <entities>..." />
+        </TableToolbar>
+
+        {data.data.length > 0 ? (
+          <>
+            <<Entity>Table data={data.data} />
+            <PaginationControls
+              currentPage={data.meta.page}
+              totalPages={Math.ceil(data.meta.total / data.meta.perPage)}
+            />
+          </>
+        ) : (
+          <EmptyState
+            icon={<Icon>}
+            message="Nenhum(a) <entity> cadastrado(a)"
+          />
+        )}
       </div>
-      <<Entity>Table data={data.data} />
-    </div>
+
+      {searchParams.create === '<entity>' && <Create<Entity>Sheet />}
+      <Delete<Entity>Dialog />
+    </>
   )
 }
 ```
@@ -93,6 +146,9 @@ export default async function <Entity>sPage(props: NextPageProps) {
 - Pages that fetch data are async Server Components — they fetch data directly, no `useEffect`
 - Filters come from `searchParams` — the URL is the source of truth for listing state
 - Parse searchParams using `getSearchParam()` from shared utils — never access raw values directly
+- Pass `query`, `sort`, `order`, `page` from searchParams to the API function
+- Use `TableToolbar` + `SearchInput` for search, `FilterSelect` for dropdowns, `PaginationControls` for pagination
+- `SortableHeader` goes in the column definitions, not in the page — the page only passes sort params to the API
 - Pass parsed data to domain components — pages compose, they don't render complex UI
 
 ---

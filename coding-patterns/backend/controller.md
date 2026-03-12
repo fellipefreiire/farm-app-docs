@@ -141,6 +141,10 @@ const querySchema = z.object({
   page: z.coerce.number().min(1).optional().default(1),
   perPage: z.coerce.number().min(1).max(100).optional().default(20),
 
+  // --- sorting (optional — domain defines allowed fields) ---
+  sort: z.enum(['name', 'createdAt']).optional(),
+  order: z.enum(['asc', 'desc']).optional().default('asc'),
+
   // --- text search across multiple columns (optional) ---
   search: z.string().optional(),
 
@@ -180,6 +184,8 @@ export class List<Entity>sController {
   @ApiOperation({ summary: 'List <entities>' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'perPage', required: false, type: Number })
+  @ApiQuery({ name: 'sort', required: false, enum: ['name', 'createdAt'] })
+  @ApiQuery({ name: 'order', required: false, enum: ['asc', 'desc'] })
   @ApiQuery({ name: 'search', required: false, type: String })
   @ApiQuery({ name: 'active', required: false, type: Boolean })
   @ApiQuery({ name: 'status', required: false, enum: <StatusEnum> })
@@ -208,6 +214,8 @@ export class List<Entity>sController {
 ```
 
 **Filter field naming conventions:**
+- `sort` — column to sort by, validated with `z.enum([...])` using the domain's allowed sort fields
+- `order` — sort direction (`asc` or `desc`), defaults to `asc`
 - `search` — free text across multiple columns (domain defines which columns in the repository)
 - `active` — boolean toggle, always string-transformed
 - `status`, `type`, etc. — enum fields, use `z.nativeEnum()`

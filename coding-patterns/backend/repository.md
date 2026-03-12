@@ -24,14 +24,22 @@ Defined as an `abstract class` — not an interface — so NestJS can use it as 
 
 ```ts
 // src/domain/<domain>/application/repositories/<entity>-repository.ts
-import type { PaginationParams, CursorPaginationParams, CursorPaginatedResult } from '@/core/repositories/pagination-params'
+import type {
+  PaginationParams,
+  SortParams,
+  CursorPaginationParams,
+  CursorPaginatedResult,
+} from '@/core/repositories/pagination-params'
 import type { <Entity> } from '../../enterprise/entities/<entity>'
+
+export type <Entity>SortField = 'name' | 'createdAt'  // only sortable columns — domain decides
 
 export type <Entity>CursorParams = CursorPaginationParams & {
   // add domain-specific filters here if needed (same as offset variant)
 }
 
-export type <Entity>ListParams = PaginationParams & {
+export type <Entity>ListParams = PaginationParams &
+  SortParams<<Entity>SortField> & {
   search?: string        // free text — repository defines which columns are searched
   active?: boolean
   status?: '<StatusA>' | '<StatusB>'   // enum filter
@@ -108,6 +116,8 @@ export class Prisma<Entity>Repository implements <Entity>Repository {
   async list({
     page = 1,
     perPage = 20,
+    sort = 'createdAt',
+    order = 'desc',
     search,
     active,
     status,
@@ -148,7 +158,7 @@ export class Prisma<Entity>Repository implements <Entity>Repository {
     const [records, total] = await this.prisma.$transaction([
       this.prisma.<entity>.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { [sort]: order },
         skip: (page - 1) * perPage,
         take: perPage,
       }),
@@ -241,6 +251,8 @@ export class InMemory<Entity>Repository implements <Entity>Repository {
   async list({
     page = 1,
     perPage = 20,
+    sort = 'createdAt',
+    order = 'desc',
     search,
     active,
     status,
@@ -261,9 +273,25 @@ export class InMemory<Entity>Repository implements <Entity>Repository {
     if (endDate) filtered = filtered.filter((i) => i.createdAt <= endDate)
 
     const total = filtered.length
-    const items = filtered
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-      .slice((page - 1) * perPage, page * perPage)
+
+    filtered.sort((a, b) => {
+      const aVal = a[sort]
+      const bVal = b[sort]
+
+      if (aVal instanceof Date && bVal instanceof Date) {
+        return order === 'asc'
+          ? aVal.getTime() - bVal.getTime()
+          : bVal.getTime() - aVal.getTime()
+      }
+
+      const aStr = String(aVal)
+      const bStr = String(bVal)
+      return order === 'asc'
+        ? aStr.localeCompare(bStr)
+        : bStr.localeCompare(aStr)
+    })
+
+    const items = filtered.slice((page - 1) * perPage, page * perPage)
 
     return [items, total]
   }
@@ -328,9 +356,16 @@ export class InMemory<Entity>Repository implements <Entity>Repository {
 
 **Rule of thumb:** if the user navigates by page number → offset. If the user scrolls or loads "more" → cursor.
 
-Core cursor types (defined in `src/core/repositories/pagination-params.ts` alongside existing offset types):
+Core types (defined in `src/core/repositories/pagination-params.ts`):
 
 ```ts
+export type SortOrder = 'asc' | 'desc'
+
+export type SortParams<TAllowedFields extends string = string> = {
+  sort?: TAllowedFields
+  order?: SortOrder
+}
+
 export type CursorPaginationParams = {
   cursor?: string
   limit?: number
@@ -342,6 +377,8 @@ export type CursorPaginatedResult<T> = {
   count: number
 }
 ```
+
+`SortParams` is generic — each domain restricts allowed sort fields via the type parameter (e.g. `SortParams<'name' | 'createdAt'>`). This prevents invalid sort fields at the type level.
 
 ---
 
