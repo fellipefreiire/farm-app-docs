@@ -14,7 +14,7 @@ Living notes for gotchas, pitfalls, and things that went wrong during developmen
 
 ## Health check
 
-health-check-counter: 0
+health-check-counter: 1
 
 The `health-check-counter` tracks how many features have been merged since the last `/health-check`. It is incremented by `/feature`, `/new-domain`, and `/small-change` after a PR is successfully created. When it reaches `HEALTH_CHECK_THRESHOLD` (defined in CLAUDE.md), Claude warns before starting the next task. It resets to 0 after `/health-check` completes.
 
@@ -36,4 +36,6 @@ The `health-check-counter` tracks how many features have been merged since the l
 
 - Phase 4 doc updates were skipped in past sessions, causing `api-reference.md`, `flows.md`, and `architecture.md` to go stale. Every implementation MUST update the docs listed in Phase 4 (`shared-phases.md` lines 88-95) — never skip even for small changes.
 - `.env.test` must NOT contain `DATABASE_URL` — it breaks E2E tests because NestJS `ConfigModule` uses it instead of the unique schema URL set by `setup-e2e.ts`.
+- Redis cache can serve stale data after schema migrations. When adding new fields to an entity, flush Redis (`redis-cli FLUSHDB`) after migration. The `findById` repository method caches full entities — cached entries from before the migration won't have the new field.
+- Frontend toast/UI strings must be in Portuguese. Backend API responses stay in English (per CLAUDE.md rule). The translation happens in the frontend action files and components, not in the backend.
 

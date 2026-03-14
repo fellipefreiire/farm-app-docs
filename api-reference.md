@@ -132,11 +132,11 @@ If the project uses WebSockets or Server-Sent Events, document them in a separat
 
 | Method | Path | Description | Auth |
 |--------|------|-------------|------|
-| POST | /v1/harvests | Create a new harvest | Private |
-| GET | /v1/harvests | List harvests (paginated) | Private |
+| POST | /v1/harvests | Create a new harvest (name, cropTypeId, varietyId, fieldId, dates) | Private |
+| GET | /v1/harvests | List harvests (paginated, filterable by query, status, cropTypeId, fieldId) | Private |
 | GET | /v1/harvests/:id | Find harvest by ID | Private |
 | GET | /v1/harvests/active | Get active harvest by field | Private |
-| PUT | /v1/harvests/:id | Edit a harvest | Private |
+| PUT | /v1/harvests/:id | Edit a harvest (name, cropTypeId, varietyId, fieldId, dates) | Private |
 | DELETE | /v1/harvests/:id | Delete a harvest | Private |
 | PATCH | /v1/harvests/:id/activate | Activate a harvest | Private |
 | PATCH | /v1/harvests/:id/complete | Complete a harvest | Private |

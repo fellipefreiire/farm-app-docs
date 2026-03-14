@@ -229,10 +229,27 @@ sequenceDiagram
 **Actor:** Farm owner, Farm manager
 **Domain:** Crop (Harvest subdomain)
 
+**Listing:**
+1. User navigates to "Colheitas" → paginated table with columns: Nome, Status (badge), Tipo de Cultura, Variedade, Talhão, Data de Início, Previsão de Término
+2. Tabs filter by status: Todos, Planejadas, Ativas, Concluídas, Canceladas
+3. Search input filters by nome (debounced, server-side)
+4. Filters popover allows filtering by Tipo de Cultura, Variedade (dependent on crop type), Talhão — active filters shown as removable tags below the search bar
+
 **Create:**
-1. User clicks "Nova colheita" → form opens
-2. User fills: field, variety, planting date, expected harvest date → submits
-3. System creates harvest with status `PLANNED` → audit log records creation
+1. User clicks "Adicionar Colheita" → sheet opens
+2. User fills: nome, tipo de cultura (async select), variedade (async select, dependent), talhão (async select), data de início, previsão de término → submits
+3. System validates (variety belongs to crop type, no active harvest on field, valid date range) → creates harvest with status `PLANNED` → audit log records creation
+
+**Edit:**
+1. User opens harvest detail → clicks "Editar Colheita" → sheet opens
+2. User can edit: nome, tipo de cultura, variedade, talhão, datas
+3. System updates harvest → audit log records all changed fields (name, cropTypeId, varietyId, fieldId, dates)
+4. Sheet closes automatically on success
+
+**Detail page:**
+- Header: nome + status badge
+- Sidebar "Detalhes" (collapsible, shows first 4): Tipo de Cultura (link), Variedade (link), Talhão (link), Data de Início, Previsão de Término, Data de Término (if completed), Criado em, Atualizado em
+- Main: Auditoria (last 5 logs with diff modal)
 
 **Activate:**
 1. User clicks "Iniciar" on a planned harvest
