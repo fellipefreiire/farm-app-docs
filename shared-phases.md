@@ -26,7 +26,7 @@ cd backend && stryker run --mutate <changed-files>      # mutation testing (see 
 cd frontend && pnpm build
 cd frontend && pnpm lint
 cd frontend && tsc --noEmit
-cd frontend && pnpm test:e2e                            # Playwright (requires running stack)
+cd frontend && pnpm test:e2e                            # Playwright (runs with MSW mocks, no backend needed)
 ```
 
 **Stryker scope:** Default config mutates `src/domain/`, `src/shared/`, `src/core/` (business logic). Infrastructure (`src/infra/`) is mutated only on demand via `--mutate` flag. Stryker runs only unit tests — never E2E. See `docs/coding-patterns/backend/mutation-testing.md` for full configuration, scope rules, and surviving mutant analysis.
