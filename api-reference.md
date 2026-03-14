@@ -77,29 +77,68 @@ If the project uses WebSockets or Server-Sent Events, document them in a separat
 
 ---
 
-<!-- Add endpoints below, grouped by domain. Remove this comment when the first endpoint is added. -->
-
-<!-- Example:
-
-## Authentication
+## Platform
 
 | Method | Path | Description | Auth |
 |--------|------|-------------|------|
-| POST | /v1/auth/sign-in | Authenticate user with email and password | Public |
-| POST | /v1/auth/sign-up | Register new user | Public |
-| POST | /v1/auth/refresh | Refresh access token | Public |
-| POST | /v1/auth/forgot-password | Send password recovery email | Public |
-| POST | /v1/auth/reset-password | Reset password with token | Public |
+| GET | /health | Application health check | Public |
 
-## Livestock
+## User
 
 | Method | Path | Description | Auth |
 |--------|------|-------------|------|
-| POST | /v1/animals | Create animal | Private |
-| GET | /v1/animals | List animals (page, perPage, search, active, breed) | Private |
-| GET | /v1/animals/:id | Find animal by ID | Private |
-| PUT | /v1/animals/:id | Edit animal | Private |
-| DELETE | /v1/animals/:id | Delete animal | Private |
-| PATCH | /v1/animals/:id/toggle-status | Toggle animal active/archived | Private |
+| POST | /v1/sessions | Authenticate user with email and password | Public |
+| POST | /v1/sessions/refresh | Refresh access token | Public |
+| POST | /v1/sessions/logout | Logout user (invalidate token) | Private |
+| POST | /v1/users | Create a new user | Private |
 
--->
+## Field
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | /v1/fields | Create a new field | Private |
+| GET | /v1/fields | List fields (paginated, searchable) | Private |
+| GET | /v1/fields/:id | Find field by ID | Private |
+| PUT | /v1/fields/:id | Edit a field | Private |
+| DELETE | /v1/fields/:id | Delete a field | Private |
+| PATCH | /v1/fields/:id/toggle-status | Toggle field active/inactive | Private |
+| GET | /v1/fields/:id/audit-logs | List audit logs for a field | Private |
+
+## Crop
+
+### Crop Types
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | /v1/crop-types | Create a new crop type | Private |
+| GET | /v1/crop-types | List crop types (paginated) | Private |
+| GET | /v1/crop-types/:id | Find crop type by ID | Private |
+| PUT | /v1/crop-types/:id | Edit a crop type | Private |
+| DELETE | /v1/crop-types/:id | Delete a crop type | Private |
+| GET | /v1/crop-types/:id/audit-logs | List audit logs for a crop type | Private |
+
+### Varieties
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | /v1/crop-types/:cropTypeId/varieties | Create a new variety | Private |
+| GET | /v1/crop-types/:cropTypeId/varieties | List varieties for a crop type | Private |
+| GET | /v1/varieties/:id | Find variety by ID | Private |
+| PUT | /v1/varieties/:id | Edit a variety | Private |
+| DELETE | /v1/varieties/:id | Delete a variety | Private |
+| GET | /v1/varieties/:id/audit-logs | List audit logs for a variety | Private |
+
+### Harvests
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | /v1/harvests | Create a new harvest | Private |
+| GET | /v1/harvests | List harvests (paginated) | Private |
+| GET | /v1/harvests/:id | Find harvest by ID | Private |
+| GET | /v1/harvests/active | Get active harvest by field | Private |
+| PUT | /v1/harvests/:id | Edit a harvest | Private |
+| DELETE | /v1/harvests/:id | Delete a harvest | Private |
+| PATCH | /v1/harvests/:id/activate | Activate a harvest | Private |
+| PATCH | /v1/harvests/:id/complete | Complete a harvest | Private |
+| PATCH | /v1/harvests/:id/cancel | Cancel a harvest | Private |
+| GET | /v1/harvests/:id/audit-logs | List audit logs for a harvest | Private |

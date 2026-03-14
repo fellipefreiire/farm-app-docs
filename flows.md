@@ -120,6 +120,27 @@ sequenceDiagram
 
 ---
 
+## User
+
+### Create user [MVP]
+
+**Trigger:** Admin clicks "Novo usuário" on the user management page
+**Actor:** Admin
+**Domain:** User
+
+**Happy path:**
+1. Admin clicks "Novo usuário" → form opens
+2. Admin fills: name, email, password, role (ADMIN or USER) → submits
+3. System creates user → success toast → list refreshes
+4. Audit log records user creation
+
+**Error cases:**
+- Email already exists → inline error: "Email já cadastrado"
+- Missing required fields → inline validation
+- Non-admin user → 403 Forbidden
+
+---
+
 ## Field
 
 ### Create field [MVP]
@@ -139,21 +160,117 @@ sequenceDiagram
 
 ---
 
+### Manage field [MVP]
+
+**Trigger:** User interacts with an existing field (edit, archive, delete)
+**Actor:** Farm owner, Farm manager
+**Domain:** Field
+
+**Edit:**
+1. User clicks field in the list → detail page opens
+2. User edits name, area, or description → submits
+3. System updates field → success toast → audit log records change
+
+**Toggle status (active/inactive):**
+1. User clicks toggle on a field → confirmation dialog
+2. System toggles status → list updates → audit log records change
+
+**Delete:**
+1. User clicks delete on a field → confirmation dialog
+2. System soft-deletes field → success toast → list refreshes → audit log records deletion
+
+**Error cases:**
+- Duplicate name on edit → inline error: "Talhão já cadastrado com esse nome"
+- Field not found → 404
+
+---
+
 ## Crop
 
-### Create crop [MVP]
+### Manage crop types [MVP]
 
-**Trigger:** User clicks "Nova safra" on the crops list page
+**Trigger:** User manages crop types (create, edit, delete)
 **Actor:** Farm owner, Farm manager
-**Domain:** Crop
+**Domain:** Crop (CropType subdomain)
 
-**Happy path:**
-1. User clicks "Nova safra" → form opens
-2. User fills: crop type, variety, planting date, expected harvest date → submits
-3. System creates crop → success toast → list refreshes
+**Create:**
+1. User clicks "Novo tipo de cultura" → form opens
+2. User fills: name → submits
+3. System creates crop type → success toast → list refreshes → audit log records creation
+
+**Edit/Delete:** Same pattern as field management — edit inline, delete with confirmation.
 
 **Error cases:**
 - Missing required fields → inline validation
+
+---
+
+### Manage varieties [MVP]
+
+**Trigger:** User manages varieties within a crop type
+**Actor:** Farm owner, Farm manager
+**Domain:** Crop (Variety subdomain)
+
+**Create:**
+1. User navigates to a crop type → clicks "Nova variedade"
+2. User fills: name → submits
+3. System creates variety linked to crop type → success toast → audit log records creation
+
+**Edit/Delete:** Same pattern as field management.
+
+**Error cases:**
+- Missing required fields → inline validation
+
+---
+
+### Harvest lifecycle [MVP]
+
+**Trigger:** User creates and manages a harvest through its lifecycle
+**Actor:** Farm owner, Farm manager
+**Domain:** Crop (Harvest subdomain)
+
+**Create:**
+1. User clicks "Nova colheita" → form opens
+2. User fills: field, variety, planting date, expected harvest date → submits
+3. System creates harvest with status `PLANNED` → audit log records creation
+
+**Activate:**
+1. User clicks "Iniciar" on a planned harvest
+2. System changes status to `ACTIVE` → only one active harvest per field allowed → audit log records activation
+
+**Complete:**
+1. User clicks "Finalizar" on an active harvest
+2. System changes status to `COMPLETED` → audit log records completion
+
+**Cancel:**
+1. User clicks "Cancelar" on a planned or active harvest
+2. Confirmation dialog → system changes status to `CANCELLED` → audit log records cancellation
+
+**Error cases:**
+- Already active harvest on the same field → error: "Já existe uma colheita ativa neste talhão"
+- Invalid status transition (e.g., complete a cancelled harvest) → error
+
+---
+
+## Audit
+
+### View audit logs [MVP]
+
+**Trigger:** User clicks "Histórico" on any entity detail page
+**Actor:** Farm owner, Farm manager, Admin
+**Domain:** Cross-domain (User, Field, Crop)
+
+**Happy path:**
+1. User opens entity detail page (field, crop type, variety, or harvest)
+2. User clicks "Histórico" or scrolls to audit section
+3. System lists audit log entries (paginated, newest first)
+4. Each entry shows: action, actor, timestamp, changes
+
+**Supported entities:**
+- Fields → `GET /v1/fields/:id/audit-logs`
+- Crop types → `GET /v1/crop-types/:id/audit-logs`
+- Varieties → `GET /v1/varieties/:id/audit-logs`
+- Harvests → `GET /v1/harvests/:id/audit-logs`
 
 ---
 

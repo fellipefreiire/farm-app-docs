@@ -8,17 +8,17 @@ Monolithic NestJS backend with a Next.js frontend, connected via REST API. The s
 
 ## Domains
 
-| Domain | Responsibility |
-|--------|---------------|
-| **Auth** | Authentication, authorization, role-based access, user management |
-| **Field** | Field (talhao) registry — area, location, status |
-| **Crop** | Crop cycles, varieties, planting/harvest periods |
-| **Schedule** | Per-field operation planning — operations, inputs, timeline |
-| **FieldTicket** | Generated from schedule. Review → print → execute → finalize workflow |
-| **Inventory** | Inputs, seeds, harvested products, stock control |
-| **Supplier** | Supplier registry, input purchase tracking |
-| **Financial** | Revenue, expenses, cost per crop/field |
-| **Audit** | Full audit trail of every user action |
+| Domain | Responsibility | Status |
+|--------|---------------|--------|
+| **User** | Authentication, authorization, role-based access, user management | Implemented |
+| **Field** | Field (talhao) registry — area, location, status | Implemented |
+| **Crop** | Crop types, varieties, harvest lifecycle (plan → activate → complete/cancel) | Implemented |
+| **Audit** | Full audit trail of every user action (cross-cutting, event-driven) | Implemented |
+| **Schedule** | Per-field operation planning — operations, inputs, timeline | Planned |
+| **FieldTicket** | Generated from schedule. Review → print → execute → finalize workflow | Planned |
+| **Inventory** | Inputs, seeds, harvested products, stock control | Planned |
+| **Supplier** | Supplier registry, input purchase tracking | Planned |
+| **Financial** | Revenue, expenses, cost per crop/field | Planned |
 
 ---
 
@@ -26,15 +26,15 @@ Monolithic NestJS backend with a Next.js frontend, connected via REST API. The s
 
 ```mermaid
 graph TD
-  Auth[Auth]
-  Field[Field]
-  Crop[Crop]
-  Schedule[Schedule]
-  FieldTicket[FieldTicket]
-  Inventory[Inventory]
-  Supplier[Supplier]
-  Financial[Financial]
-  Audit[Audit]
+  User[User ✓]
+  Field[Field ✓]
+  Crop[Crop ✓]
+  Audit[Audit ✓]
+  Schedule[Schedule ○]
+  FieldTicket[FieldTicket ○]
+  Inventory[Inventory ○]
+  Supplier[Supplier ○]
+  Financial[Financial ○]
 
   Schedule --> Field
   Schedule --> Crop
@@ -44,7 +44,7 @@ graph TD
   Financial --> Inventory
   Financial --> Crop
   Supplier --> Inventory
-  Audit -.->|observes all domains| Auth
+  Audit -.->|observes| User
   Audit -.->|observes| Field
   Audit -.->|observes| Crop
   Audit -.->|observes| Schedule
@@ -54,10 +54,12 @@ graph TD
   Audit -.->|observes| Financial
 ```
 
+**Legend:** ✓ = implemented, ○ = planned
+
 **Notes:**
-- Auth is cross-cutting — every non-public endpoint requires authentication and authorization
-- Audit subscribes to events from all domains — never called directly
-- Relationships are preliminary and will be refined as each domain is implemented
+- User is cross-cutting — every non-public endpoint requires authentication and authorization
+- Audit subscribes to domain events from all domains — never called directly
+- Relationships for planned domains are preliminary and will be refined during implementation
 
 ---
 
