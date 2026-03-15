@@ -20,6 +20,7 @@ reports/mutation/                 ← HTML report output (gitignored)
 // stryker.config.mjs
 /** @type {import('@stryker-mutator/api/core').PartialStrykerOptions} */
 export default {
+  appendPlugins: ['@stryker-mutator/vitest-runner'],
   testRunner: 'vitest',
   vitest: {
     configFile: 'vitest.config.mjs',
@@ -42,6 +43,7 @@ export default {
 
 | Option | Value | Why |
 |--------|-------|-----|
+| `appendPlugins` | `['@stryker-mutator/vitest-runner']` | **Required with pnpm.** pnpm isolates packages — Stryker's auto-discovery (`@stryker-mutator/*`) only finds plugins in its own `node_modules`, which doesn't include the vitest-runner. This option explicitly loads it. |
 | `testRunner` | `vitest` | Matches the project test framework |
 | `vitest.configFile` | `vitest.config.mjs` | Unit test config — excludes E2E tests |
 | `mutate` | domain + shared + core | Default scope — where business logic lives |

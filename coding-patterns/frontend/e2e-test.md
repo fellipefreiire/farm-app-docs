@@ -17,8 +17,10 @@ frontend/
       manage-crop-types.e2e-spec.ts
       manage-varieties.e2e-spec.ts
       manage-harvests.e2e-spec.ts
+    supplier/
+      manage-suppliers.e2e-spec.ts
     audit/
-      view-audit-logs.e2e-spec.ts
+      view-audit-logs.e2e-spec.ts     ← one test per domain
     mocks/
       handlers/
         auth.handler.ts               ← MSW handlers per domain
@@ -26,6 +28,7 @@ frontend/
         crop-type.handler.ts
         variety.handler.ts
         harvest.handler.ts
+        supplier.handler.ts
       handlers.ts                     ← aggregates all handlers
       server.ts                       ← MSW setupServer (Node.js)
     fixtures/
@@ -39,7 +42,7 @@ frontend/
 
 ```
 Playwright (test process)
-  └→ browser navigates to Next.js (localhost:3000)
+  └→ browser navigates to Next.js (localhost:3001 — dedicated E2E port)
        └→ Next.js server renders page (SSR)
             └→ server action or page fetch calls API (localhost:3333)
                  └→ MSW intercepts the request inside the Node.js process
@@ -85,12 +88,13 @@ export const server = setupServer(...handlers)
 ### Handler aggregator
 
 ```ts
-// tests/mocks/handlers.ts
+// tests/mocks/handlers.ts — add new domain handlers here
 import { authHandlers } from './handlers/auth.handler'
 import { fieldHandlers } from './handlers/field.handler'
 import { cropTypeHandlers } from './handlers/crop-type.handler'
 import { varietyHandlers } from './handlers/variety.handler'
 import { harvestHandlers } from './handlers/harvest.handler'
+import { supplierHandlers } from './handlers/supplier.handler'
 
 export const handlers = [
   ...authHandlers,
@@ -98,6 +102,7 @@ export const handlers = [
   ...cropTypeHandlers,
   ...varietyHandlers,
   ...harvestHandlers,
+  ...supplierHandlers,
 ]
 ```
 
@@ -215,7 +220,7 @@ export const entityHandlers = [
 
 | Requirement | Details |
 |---|---|
-| All IDs must be valid UUIDs | Use pattern `XXXXXXXX-0000-4000-8000-XXXXXXXXXXXX` |
+| All IDs must be valid UUIDs | Use pattern `XXXXXXXX-0000-4000-8000-XXXXXXXXXXXX`. Each domain has a unique prefix: Field=`00`, CropType=`10`, Variety=`20`, Harvest=`30`, Supplier=`40`. Next domain uses `50`. |
 | Response shape must match backend | Validate against Zod schemas in `src/domains/<domain>/schemas/` |
 | Audit logs must use shared schema | `{ id, actorId, actorName, action, entity, entityId, changes, createdAt }` |
 | List endpoints return `meta` | `{ data, meta: { total, page, perPage } }` |
@@ -317,10 +322,11 @@ test.describe.serial('Manage Entities', () => {
     await page.getByTestId('entity-create-button').click()
     await expect(page.getByTestId('stacked-sheet')).toBeVisible()
 
-    await page.getByTestId('entity-name-input').fill('New Entity')
+    await page.getByTestId('entity-name-input').fill('Nova Entidade')
     await page.getByTestId('entity-create-submit').click()
 
-    await expect(page.getByText('Entity created successfully.')).toBeVisible()
+    // Toast messages are always in Portuguese (set in server actions)
+    await expect(page.getByText('Entidade criada com sucesso.')).toBeVisible()
   })
 
   test('should edit an entity', async ({ page }) => {
@@ -335,10 +341,10 @@ test.describe.serial('Manage Entities', () => {
     await expect(page.getByTestId('entity-edit-form')).toBeVisible()
     // ... fill and submit ...
 
-    await expect(page.getByText('Entity updated successfully.')).toBeVisible()
+    await expect(page.getByText('Entidade atualizada com sucesso.')).toBeVisible()
 
-    // Edit sheets do NOT auto-close — close manually
-    await page.getByTestId('stacked-sheet-close').click()
+    // Edit forms call closeAll() on success — sheet closes automatically.
+    // Do NOT click stacked-sheet-close — just verify it's gone.
     await expect(page.getByTestId('stacked-sheet')).not.toBeVisible()
   })
 
@@ -396,6 +402,8 @@ Actual `data-testid` patterns used in the codebase:
 // playwright.config.ts
 import { defineConfig } from '@playwright/test'
 
+const E2E_PORT = 3001
+
 export default defineConfig({
   testDir: './tests',
   testMatch: '**/*.e2e-spec.ts',
@@ -403,19 +411,20 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: 1,                    // serial execution — MSW state is shared
   use: {
-    baseURL: process.env.FRONTEND_URL ?? 'http://localhost:3000',
+    baseURL: process.env.FRONTEND_URL ?? `http://localhost:${E2E_PORT}`,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
   webServer: {
-    command: 'ENABLE_MSW=true pnpm dev',
-    port: 3000,
+    command: `ENABLE_MSW=true pnpm dev --port ${E2E_PORT}`,
+    port: E2E_PORT,
     reuseExistingServer: !process.env.CI,
   },
 })
 ```
 
 **Key settings:**
+- `E2E_PORT = 3001` — dedicated port for E2E tests. The dev server runs on 3000 for development — using a separate port prevents conflicts. If tests reuse an existing dev server on 3000 that was started **without** `ENABLE_MSW=true`, MSW won't be active and all auth-dependent tests will fail silently.
 - `workers: 1` — mandatory because MSW state is shared across all tests
 - `ENABLE_MSW=true` — activates MSW via `instrumentation.ts`
 - `reuseExistingServer` — reuses running dev server locally, starts fresh in CI
@@ -429,38 +438,69 @@ export default defineConfig({
 cd frontend && pnpm test:e2e
 
 # Run a specific test file
-cd frontend && pnpm playwright test tests/field/manage-fields.e2e-spec.ts
+cd frontend && npx playwright test tests/field/manage-fields.e2e-spec.ts
 
 # Run with UI mode (interactive debugging)
-cd frontend && pnpm playwright test --ui
+cd frontend && npx playwright test --ui
 
 # Run with headed browser (see the browser)
-cd frontend && pnpm playwright test --headed
+cd frontend && npx playwright test --headed
 
 # Show HTML report after run
-cd frontend && pnpm playwright show-report
+cd frontend && npx playwright show-report
 ```
+
+### Pre-run cleanup
+
+If tests fail on `page.goto()` or the dev server doesn't start, check for stale processes:
+
+```bash
+# Remove stale lock file (left by crashed dev server)
+rm -f frontend/.next/dev/lock
+
+# Kill residual Next.js processes on E2E port
+lsof -i :3001 -sTCP:LISTEN   # check if something is listening
+pkill -f "next dev"           # kill if needed
+```
+
+### Troubleshooting
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| All auth tests timeout on `waitForURL('/dashboard')` | Dev server running on port 3000 without MSW, Playwright reusing it | Use dedicated port 3001 (already configured). Ensure no stale server on 3001. |
+| `page.goto()` fails with connection refused | `.next/dev/lock` file prevents server startup | `rm -f frontend/.next/dev/lock` |
+| ZodError on page load | MSW handler response shape doesn't match Zod schema | Compare handler interface with `src/domains/<domain>/schemas/`. Common: missing new field added to entity. |
+| `strict mode violation: resolved to 2 elements` | `getByText` matches both table cell and toast | Use `getByRole('cell', { name: '...' })` for table data |
+| Edit test fails on `stacked-sheet-close` click | Sheet already closed via `closeAll()` after success | Don't click close — just verify `not.toBeVisible()` |
 
 ---
 
 ## Adding tests for a new domain
 
+Every new domain **must** include Playwright E2E tests as part of the implementation — never defer to a future task.
+
 1. **Create the handler** at `tests/mocks/handlers/<domain>.handler.ts`:
-   - Define interfaces matching the real API response
-   - Add seed data with valid UUIDs
+   - Define interfaces matching the real API response (check Zod schemas in `src/domains/<domain>/schemas/`)
+   - Add seed data with valid UUIDs (use the next available prefix: 00=Field, 10=CropType, 20=Variety, 30=Harvest, 40=Supplier, 50=next)
    - Pre-seed audit logs for at least one entity
-   - Implement all CRUD endpoints + audit log endpoint
+   - Implement all CRUD endpoints + toggle-status + audit log endpoint
    - Export seed IDs and reset function
 
-2. **Register the handler** in `tests/mocks/handlers.ts`
+2. **Register the handler** in `tests/mocks/handlers.ts` — add import and spread into the handlers array
 
 3. **Create the test file** at `tests/<domain>/manage-<entities>.e2e-spec.ts`:
    - Import from `../fixtures/auth.fixture`
    - Use `test.describe.serial()`
    - Order: list → search → create → validation → edit → status changes → delete
    - Delete tests LAST (removes entities from shared state)
+   - All toast messages and status labels must be in **Portuguese** (check server action messages)
+   - After edit/create submit, do NOT click `stacked-sheet-close` — verify `not.toBeVisible()` directly
+   - Use `getByRole('cell', { name: '...' })` when text might match both table cell and toast
 
-4. **Verify components have `data-testid`** — every interactive element in the frontend must have a `data-testid` attribute following the conventions above
+4. **Add audit log test** in `tests/audit/view-audit-logs.e2e-spec.ts`:
+   - Add a test for the new domain's audit page using the pre-seeded audit log
+
+5. **Verify components have `data-testid`** — every interactive element in the frontend must have a `data-testid` attribute following the conventions above
 
 ---
 
@@ -480,17 +520,28 @@ await expect(page.getByText('South Field')).not.toBeVisible({ timeout: 10000 })
 await expect(page.getByText('North Field')).toBeVisible()
 ```
 
-### Closing edit sheets
+### After edit/create submit
 
-Edit sheets do NOT auto-close after submit. Close them manually:
+Edit and create forms call `closeAll()` on success — the sheet closes automatically. Do **not** click `stacked-sheet-close` — just verify the sheet is gone:
 
 ```ts
 await page.getByTestId('entity-edit-submit').click()
-await expect(page.getByText('Entity updated successfully.')).toBeVisible()
+await expect(page.getByText('Entidade atualizada com sucesso.')).toBeVisible()
 
-// Close the sheet manually
-await page.getByTestId('stacked-sheet-close').click()
+// Sheet closes automatically via closeAll() — just verify it's gone
 await expect(page.getByTestId('stacked-sheet')).not.toBeVisible()
+```
+
+### Avoiding strict mode violations
+
+When asserting text that appears in both a table cell and a toast, use `getByRole` to be specific:
+
+```ts
+// ❌ Matches both the cell "Fornecedor Atualizado" and toast "Fornecedor atualizado com sucesso."
+await expect(page.getByText('Fornecedor Atualizado')).toBeVisible()
+
+// ✅ Targets only the table cell
+await expect(page.getByRole('cell', { name: 'Fornecedor Atualizado' })).toBeVisible()
 ```
 
 ### Dynamic entity selection (when ID is unknown)
@@ -502,10 +553,10 @@ When entities were created or modified by previous tests:
 const actionsButton = page.getByTestId(/^entity-actions-/).first()
 await actionsButton.click()
 
-// For status cells
+// For status cells — use Portuguese labels as shown in the UI
 const plannedCell = page
   .locator('[data-testid^="harvest-status-"]')
-  .filter({ hasText: 'Planned' })
+  .filter({ hasText: 'Planejada' })
   .first()
 const testId = await plannedCell.getAttribute('data-testid')
 const harvestId = testId!.replace('harvest-status-', '')
@@ -534,7 +585,7 @@ const last = page.getByTestId(/^crop-type-actions-/).last()
 - AAA pattern: Arrange (navigate) → Act (interact) → Assert (verify)
 - Use auth fixture for authenticated flows — never repeat sign-in logic
 - MSW handler responses must match real API contracts
-- Toast and validation messages must match the actual frontend text (check schemas and action files)
+- Toast messages, validation errors, and status labels must be in **Portuguese** — check server action files for toast text, schema files for validation messages, and column files for status labels. Never use English text in test assertions for UI-visible strings.
 - Use `waitForSelector` or assertion timeouts — never use arbitrary `waitForTimeout`
 - Screenshots on failure only
 
@@ -552,8 +603,16 @@ await page.getByText('Create Order').click()
 // ❌ Arbitrary wait
 await page.waitForTimeout(2000)
 
-// ❌ Assuming stacked sheet auto-closes after edit
-await expect(page.getByTestId('stacked-sheet')).not.toBeVisible() // will timeout
+// ❌ Clicking stacked-sheet-close after submit — sheet already closed via closeAll()
+await page.getByTestId('stacked-sheet-close').click() // element detached from DOM
+
+// ❌ Using English text for toasts or status labels — UI is in Portuguese
+await expect(page.getByText('Field created successfully.')).toBeVisible()
+// ✅ await expect(page.getByText('Talhão criado com sucesso.')).toBeVisible()
+
+// ❌ Using getByText when text matches both cell and toast (strict mode violation)
+await expect(page.getByText('Fornecedor Atualizado')).toBeVisible()
+// ✅ await expect(page.getByRole('cell', { name: 'Fornecedor Atualizado' })).toBeVisible()
 
 // ❌ Deleting seed entities needed by other test files
 page.getByTestId(/^crop-type-actions-/).first() // might delete shared seed data
@@ -584,4 +643,3 @@ http.post('http://localhost:3333/v1/sessions', ...)
 | MSW only intercepts server-side requests | Client-side `fetch` in hooks/components bypasses MSW | Use server actions for data mutations; async selects may need browser MSW in future |
 | No state reset between tests | Tests share accumulated state | Use `test.describe.serial()` and order tests carefully |
 | `workers: 1` required | Slower test execution | Acceptable tradeoff for state consistency |
-| Edit sheets don't auto-close | Tests must close sheets manually | Click `stacked-sheet-close` after verifying toast |

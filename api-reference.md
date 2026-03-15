@@ -142,3 +142,15 @@ If the project uses WebSockets or Server-Sent Events, document them in a separat
 | PATCH | /v1/harvests/:id/complete | Complete a harvest | Private |
 | PATCH | /v1/harvests/:id/cancel | Cancel a harvest | Private |
 | GET | /v1/harvests/:id/audit-logs | List audit logs for a harvest | Private |
+
+## Supplier
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | /v1/suppliers | Create a new supplier | Private |
+| GET | /v1/suppliers | List suppliers (paginated, searchable) | Private |
+| GET | /v1/suppliers/:id | Find supplier by ID | Private |
+| PUT | /v1/suppliers/:id | Edit a supplier | Private |
+| DELETE | /v1/suppliers/:id | Delete a supplier | Private |
+| PATCH | /v1/suppliers/:id/toggle-status | Toggle supplier active/inactive | Private |
+| GET | /v1/suppliers/:id/audit-logs | List audit logs for a supplier | Private |

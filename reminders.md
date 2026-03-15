@@ -14,7 +14,7 @@ Living notes for gotchas, pitfalls, and things that went wrong during developmen
 
 ## Health check
 
-health-check-counter: 1
+health-check-counter: 2
 
 The `health-check-counter` tracks how many features have been merged since the last `/health-check`. It is incremented by `/feature`, `/new-domain`, and `/small-change` after a PR is successfully created. When it reaches `HEALTH_CHECK_THRESHOLD` (defined in CLAUDE.md), Claude warns before starting the next task. It resets to 0 after `/health-check` completes.
 
@@ -38,4 +38,23 @@ The `health-check-counter` tracks how many features have been merged since the l
 - `.env.test` must NOT contain `DATABASE_URL` — it breaks E2E tests because NestJS `ConfigModule` uses it instead of the unique schema URL set by `setup-e2e.ts`.
 - Redis cache can serve stale data after schema migrations. When adding new fields to an entity, flush Redis (`redis-cli FLUSHDB`) after migration. The `findById` repository method caches full entities — cached entries from before the migration won't have the new field.
 - Frontend toast/UI strings must be in Portuguese. Backend API responses stay in English (per CLAUDE.md rule). The translation happens in the frontend action files and components, not in the backend.
+- Stryker requires `appendPlugins: ['@stryker-mutator/vitest-runner']` in `stryker.config.mjs` because pnpm isolates packages and Stryker's auto-discovery doesn't find the vitest-runner. Without this, Stryker silently fails with "Cannot find TestRunner plugin 'vitest'".
+- Playwright E2E tests use port 3001 (not 3000) to avoid conflicts with the dev server. If tests fail on `page.goto()`, check for stale `.next/dev/lock` file and residual processes on port 3001.
+- Playwright test assertions must use Portuguese text for toasts, validation messages, and status labels. English text causes silent assertion failures (timeout waiting for invisible text).
+
+---
+
+## Future improvements (post-MVP)
+
+### Inventory
+- Lot/batch tracking with expiry dates for inputs
+- Minimum stock alerts (notify when input stock is low)
+- Soft reservation: Schedule reserves stock for planning; alert when more product needs to be purchased to continue the plan
+- Input enrichment: manufacturer, commercial code, concentration fields
+- Unit price calculation from total purchase value (analytics/reporting)
+- Automatic StockMovement (exit) triggered by FieldTicket finalization — implement when FieldTicket domain is built (MVP, not post-MVP)
+
+### Supplier
+- Price comparison across suppliers for the same input
+- Purchase history and supplier performance tracking
 
