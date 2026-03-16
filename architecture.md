@@ -18,7 +18,7 @@ Monolithic NestJS backend with a Next.js frontend, connected via REST API. The s
 | **FieldTicket** | Generated from schedule. Review → print → execute → finalize workflow | Planned |
 | **Inventory** | Categories, inputs (insumos), purchases (entradas), stock movements (saídas), stock balance | Implemented |
 | **Supplier** | Supplier registry for tracking input purchase origins | Implemented |
-| **Financial** | Revenue, expenses, cost per crop/field | Planned |
+| **Financial** | Revenue, expenses, cost per crop/field | Post-MVP |
 
 ---
 
