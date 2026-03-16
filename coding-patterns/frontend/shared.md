@@ -43,6 +43,8 @@ src/shared/
     table-toolbar.tsx                          ← layout container for filters above tables
     empty-state.tsx                            ← empty state with icon and message
     table-tabs.tsx                             ← tab navigation for filter presets
+    preserve-params-link.tsx                   ← Link that preserves URL search params
+    view-toggle.tsx                            ← list/card view toggle synced with URL
   constants/
     messages.ts                                ← DEFAULT_ERROR_MESSAGE
     cookies.ts                                 ← cookie name constants

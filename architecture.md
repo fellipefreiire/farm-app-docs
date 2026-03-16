@@ -16,7 +16,7 @@ Monolithic NestJS backend with a Next.js frontend, connected via REST API. The s
 | **Audit** | Full audit trail of every user action (cross-cutting, event-driven) | Implemented |
 | **Schedule** | Per-field operation planning — operations, inputs, timeline | Planned |
 | **FieldTicket** | Generated from schedule. Review → print → execute → finalize workflow | Planned |
-| **Inventory** | Inputs, seeds, harvested products, stock control | Planned |
+| **Inventory** | Categories, inputs (insumos), purchases (entradas), stock movements (saídas), stock balance | Implemented |
 | **Supplier** | Supplier registry for tracking input purchase origins | Implemented |
 | **Financial** | Revenue, expenses, cost per crop/field | Planned |
 
@@ -32,7 +32,7 @@ graph TD
   Audit[Audit ✓]
   Schedule[Schedule ○]
   FieldTicket[FieldTicket ○]
-  Inventory[Inventory ○]
+  Inventory[Inventory ●]
   Supplier[Supplier ✓]
   Financial[Financial ○]
 

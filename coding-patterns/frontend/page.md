@@ -183,9 +183,9 @@ When a list page has a status filter (e.g., `active`, `status`), it must use `Ta
 import { TableTabs, type TabConfig } from '@/shared/components/table-tabs'
 
 const TABLE_TABS: TabConfig[] = [
-  { href: '/<entities>', text: 'Todos', icon: 'ScrollText', tabKey: null },
-  { href: '/<entities>?active=true', text: 'Ativos', icon: 'CircleCheck', tabKey: 'true', paramName: 'active' },
-  { href: '/<entities>?active=false', text: 'Inativos', icon: 'Archive', tabKey: 'false', paramName: 'active' },
+  { text: 'Todos', icon: 'ScrollText', tabKey: null, paramName: 'active' },
+  { text: 'Ativos', icon: 'CircleCheck', tabKey: 'true', paramName: 'active' },
+  { text: 'Inativos', icon: 'Archive', tabKey: 'false', paramName: 'active' },
 ]
 
 // In the page JSX, tabs go above search/filters:
@@ -193,6 +193,8 @@ const TABLE_TABS: TabConfig[] = [
   <TableTabs tabs={TABLE_TABS} />
 </div>
 ```
+
+`TabConfig` does **not** include `href` — `TabItem` builds the URL dynamically from current searchParams, preserving all existing params (view, filters, etc.) and only changing the tab param.
 
 ### List page filter architecture
 
@@ -300,10 +302,52 @@ src/domains/<domain>/components/ui/<entity>-active-filters.tsx
 - Filter popover fields must not exceed **3 rows per column** — use multi-column grid for 4+ fields
 - Filter ID resolution (ID → name) happens **server-side** in the page, not in the client component
 - Boolean filters (like `active`) must convert the URL string to boolean before passing to the API: `active === 'true'`
-- Links that open sheets must include `scroll={false}`
+- **Links that open sheets must use `PreserveParamsLink`** — never use `<Link>` with hardcoded URLs for sheet-opening actions. `PreserveParamsLink` preserves all current URL params (view, filters, tabs) and only changes the specified ones. Always include `scroll={false}`.
 - Pass `query`, `sort`, `order`, `page` from searchParams to the API function
 - `SortableHeader` goes in the column definitions, not in the page — the page only passes sort params to the API
 - Pass parsed data to domain components — pages compose, they don't render complex UI
+
+### PreserveParamsLink
+
+Use `PreserveParamsLink` instead of `<Link>` whenever a navigation must preserve the current URL state (filters, view, tabs). This is mandatory for all sheet-opening actions (create, edit).
+
+```tsx
+import { PreserveParamsLink } from '@/shared/components/preserve-params-link'
+
+// Opens create sheet while preserving view=cards, active=true, categoryId=..., etc.
+<PreserveParamsLink params={{ create: 'input' }} scroll={false} data-testid="input-create-button">
+  Adicionar Insumo
+</PreserveParamsLink>
+
+// Opens edit sheet while preserving all params
+<PreserveParamsLink params={{ 'edit-input': id }} scroll={false}>
+  <Pencil />
+</PreserveParamsLink>
+```
+
+The `StackedSheet` `closeAll` automatically removes `create` and `edit-*` params when closing, preserving everything else.
+
+### ViewToggle (list/card views)
+
+When a list page supports multiple views (table and cards), add a `ViewToggle` to the right side of the tabs bar. The view preference is stored in URL param `view`.
+
+```tsx
+import { ViewToggle } from '@/shared/components/view-toggle'
+
+<div className="mb-4 flex justify-between border-b">
+  <TableTabs tabs={TABLE_TABS} />
+  <ViewToggle currentView={view} />
+</div>
+
+// Conditional rendering:
+{view === 'cards' ? (
+  <<Entity>CardGrid data={rows} />
+) : (
+  <<Entity>Table data={rows} />
+)}
+```
+
+Default view is `list` (no `view` param in URL). Card view sets `view=cards`.
 
 ---
 

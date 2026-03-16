@@ -1375,6 +1375,7 @@ describe('Helmet Middleware (E2E)', () => {
 - Test error paths: not found, unauthorized, validation failure, business rule violation
 - Never use `any` in test setup or assertions
 - Unit test file suffix: `.spec.ts` — E2E and event test file suffix: `.e2e-spec.ts`
+- `.env.test` must NOT contain `DATABASE_URL` — the E2E setup (`test/setup-e2e.ts`) creates a unique schema URL from `.env`'s `DATABASE_URL`. If `.env.test` overrides it, NestJS `ConfigModule` uses the override instead of the isolated schema, and tests run against the development database
 
 ---
 
