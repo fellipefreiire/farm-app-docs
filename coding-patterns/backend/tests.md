@@ -1366,6 +1366,8 @@ describe('Helmet Middleware (E2E)', () => {
 
 ## Rules (all tests)
 
+- **Every new use case must have a unit test** — create `<action>-<entity>.spec.ts` in the use case's `__tests__/` directory. No exceptions.
+- **Every new controller must have an E2E test** — create `<action>-<entity>.controller.e2e-spec.ts` in the controller's `__tests__/` directory. No exceptions. The test infrastructure (Prisma test DB, factories, supertest) works in isolation — no external database needed.
 - Unit tests: always use `InMemory` repositories — never real DB
 - E2E tests: always use `@Injectable()` factories with Prisma — never raw `prisma.create()` inline
 - Always follow AAA pattern: Arrange, Act, Assert

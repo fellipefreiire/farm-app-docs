@@ -154,3 +154,48 @@ If the project uses WebSockets or Server-Sent Events, document them in a separat
 | DELETE | /v1/suppliers/:id | Delete a supplier | Private |
 | PATCH | /v1/suppliers/:id/toggle-status | Toggle supplier active/inactive | Private |
 | GET | /v1/suppliers/:id/audit-logs | List audit logs for a supplier | Private |
+
+## Category
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | /v1/categories | Create a new category | Private |
+| GET | /v1/categories | List categories (paginated, searchable, filterable by active) | Private |
+| PUT | /v1/categories/:id | Edit a category | Private |
+| DELETE | /v1/categories/:id | Delete a category | Private |
+| PATCH | /v1/categories/:id/toggle-status | Toggle category active/inactive | Private |
+| GET | /v1/categories/:id/audit-logs | List audit logs for a category | Private |
+
+## Input
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | /v1/inputs | Create a new input | Private |
+| GET | /v1/inputs | List inputs (paginated, searchable, filterable by categoryId, active) | Private |
+| GET | /v1/inputs/:id | Find input by ID | Private |
+| PUT | /v1/inputs/:id | Edit an input | Private |
+| DELETE | /v1/inputs/:id | Delete an input | Private |
+| PATCH | /v1/inputs/:id/toggle-status | Toggle input active/inactive | Private |
+| GET | /v1/inputs/:id/audit-logs | List audit logs for an input | Private |
+
+## Purchase (Entrada)
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | /v1/purchases | Create a new purchase | Private |
+| GET | /v1/purchases | List purchases (paginated, filterable by supplierId, inputId, startDate, endDate) | Private |
+| GET | /v1/purchases/:id | Find purchase by ID | Private |
+| PUT | /v1/purchases/:id | Edit a purchase | Private |
+| DELETE | /v1/purchases/:id | Delete a purchase | Private |
+| GET | /v1/purchases/:id/audit-logs | List audit logs for a purchase | Private |
+
+## Stock Movement (Saída)
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | /v1/stock-movements | Create a new stock movement | Private |
+| GET | /v1/stock-movements | List stock movements (paginated, filterable by inputId, type, reason) | Private |
+| PUT | /v1/stock-movements/:id | Edit a stock movement | Private |
+| PATCH | /v1/stock-movements/:id/cancel | Cancel a stock movement | Private |
+| GET | /v1/stock-movements/:id/audit-logs | List audit logs for a stock movement | Private |
+| GET | /v1/stock-balance/:inputId | Get stock balance for an input | Private |

@@ -272,6 +272,21 @@ export class <Domain>EventsModule {}
 - **Always wrap `handle()` in try/catch** — subscribers are fire-and-forget. A failure must never roll back the original operation
 - **Always log errors in `handle()`** using NestJS `Logger` — never swallow silently, never rethrow
 - **Hard deletes do not emit events** — `repository.delete()` permanently removes the entity without dispatching. Only soft deletes (`entity.softDelete()` + `repository.save()`) emit `<Entity>DeletedEvent`. If a domain requires audit for all deletions, use soft delete exclusively
+- **Every new audit subscriber requires frontend translations** — when adding a new `action` string (e.g., `'input:created'`), you must also add translations in three frontend files (see checklist below)
+
+### Audit event translation checklist
+
+When creating audit subscribers for a new domain, **all three files must be updated** with translations for every `action` string the subscribers produce:
+
+| File | What to add |
+|------|-------------|
+| `frontend/src/domains/audit-log/utils/action-label-map.ts` | `detailActionLabelMap` (e.g., `'input:created': 'Insumo criado'`) and `tableActionLabelMap` (e.g., `'input:created': 'Criado'`) |
+| `frontend/src/domains/audit-log/components/limited-audit-logs.tsx` | `actionTextMap` entry with humanized text function (e.g., `` `Insumo ${v ?? ''} criado por ${a}` ``) |
+| `frontend/src/domains/audit-log/components/audit-diff-modal.tsx` | `fieldLabelMap` for field names in changes (e.g., `unitOfMeasure: 'Unidade de Medida'`), `hiddenFields` for ID fields to hide (e.g., `categoryId`), and `valueLabelMap` for enum values (e.g., `LOSS: 'Perda'`) |
+
+**Action string format:** `<entity>:<verb>` — e.g., `category:created`, `input:status-changed`, `stock-movement:cancelled`
+
+**Without these translations, audit logs display raw English event keys like `input:created` instead of `Insumo criado`.**
 
 ---
 

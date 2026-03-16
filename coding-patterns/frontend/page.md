@@ -74,33 +74,58 @@ import { Plus, <Icon> } from 'lucide-react'
 import Link from 'next/link'
 
 import { list<Entity>s } from '@/domains/<domain>/api'
+import { find<RelatedEntity>ById } from '@/domains/<related-domain>/api'
 import {
   <Entity>Table,
   Create<Entity>Sheet,
   Edit<Entity>Sheet,
   Delete<Entity>Dialog,
+  <Entity>Filters,
+  <Entity>ActiveFilters,
 } from '@/domains/<domain>/components'
 import { EmptyState } from '@/shared/components/empty-state'
 import { PaginationControls } from '@/shared/components/pagination-controls'
 import { SearchInput } from '@/shared/components/search-input'
-import { TableToolbar } from '@/shared/components/table-toolbar'
 import { Button } from '@/shared/components/ui/button'
 import { getSearchParam } from '@/shared/utils/search-params'
 
 export default async function <Entity>sPage(props: NextPageProps) {
   const searchParams = await props.searchParams
 
+  // Standard params (all list pages)
   const page = getSearchParam(searchParams.page)
   const query = getSearchParam(searchParams.query)
   const sort = getSearchParam(searchParams.sort)
   const order = getSearchParam(searchParams.order)
+
+  // Domain-specific filter params — read from URL, pass to API
+  const <filterParam> = getSearchParam(searchParams.<filterParam>)
+  const active = getSearchParam(searchParams.active)
 
   const data = await list<Entity>s({
     page: page ? Number(page) : undefined,
     query,
     sort,
     order,
+    // Domain-specific filters — convert URL strings to API types
+    <filterParam>: <filterParam> ?? undefined,
+    active: active !== undefined && active !== null ? active === 'true' : undefined,
   })
+
+  // Count active filters for the badge
+  const activeFilterCount = [<filterParam>, active].filter(Boolean).length
+
+  // Resolve filter IDs to names for active filter pills (server-side)
+  const activeFilters: { param: string; label: string; value: string }[] = []
+
+  if (<filterParam>) {
+    const entity = await find<RelatedEntity>ById(<filterParam>).catch(() => null)
+    if (entity) activeFilters.push({ param: '<filterParam>', label: '<FilterLabel>', value: entity.name })
+  }
+
+  if (active) {
+    activeFilters.push({ param: 'active', label: 'Status', value: active === 'true' ? 'Ativo' : 'Inativo' })
+  }
 
   return (
     <>
@@ -108,16 +133,24 @@ export default async function <Entity>sPage(props: NextPageProps) {
         <div className="mb-10 flex justify-between">
           <h1 className="text-2xl font-bold"><Entity>s</h1>
           <Button asChild>
-            <Link href="/<entities>?create=<entity>" data-testid="<entity>-create-button">
+            <Link href="/<entities>?create=<entity>" scroll={false} data-testid="<entity>-create-button">
               <Plus />
               Adicionar <Entity>
             </Link>
           </Button>
         </div>
 
-        <TableToolbar>
-          <SearchInput placeholder="Pesquisar <entities>..." />
-        </TableToolbar>
+        <div className="mb-6 flex flex-col gap-3">
+          <div className="flex gap-2">
+            <SearchInput placeholder="Pesquisar <entities>..." />
+            <<Entity>Filters
+              activeCount={activeFilterCount}
+              current<FilterParam>={<filterParam> ?? undefined}
+              currentActive={active ?? undefined}
+            />
+          </div>
+          <<Entity>ActiveFilters filters={activeFilters} />
+        </div>
 
         {data.data.length > 0 ? (
           <>
@@ -142,12 +175,133 @@ export default async function <Entity>sPage(props: NextPageProps) {
 }
 ```
 
+### Status filtering — always use `TableTabs`
+
+When a list page has a status filter (e.g., `active`, `status`), it must use `TableTabs` — **never** inside the filter popover. Status is a primary navigation concern, not a secondary filter.
+
+```tsx
+import { TableTabs, type TabConfig } from '@/shared/components/table-tabs'
+
+const TABLE_TABS: TabConfig[] = [
+  { href: '/<entities>', text: 'Todos', icon: 'ScrollText', tabKey: null },
+  { href: '/<entities>?active=true', text: 'Ativos', icon: 'CircleCheck', tabKey: 'true', paramName: 'active' },
+  { href: '/<entities>?active=false', text: 'Inativos', icon: 'Archive', tabKey: 'false', paramName: 'active' },
+]
+
+// In the page JSX, tabs go above search/filters:
+<div className="mb-4 flex justify-between border-b">
+  <TableTabs tabs={TABLE_TABS} />
+</div>
+```
+
+### List page filter architecture
+
+Filters use domain-specific components, **not** inline `FilterSelect` in the page. Each domain creates two components:
+
+**1. `<Entity>Filters`** — Popover with a "Filtros" button, filter fields inside, "Aplicar" and "Limpar" buttons.
+
+```
+src/domains/<domain>/components/ui/<entity>-filters.tsx
+```
+
+- Uses `AsyncSelectField` for relationship filters (fetches options with search + infinite scroll)
+- **Status/boolean filters go in `TableTabs`, never in the popover**
+- Syncs with URL via `useFilterNavigation().setParams()`
+- Shows active filter count as a badge on the trigger button
+- Receives current filter values as props (from the server component page)
+
+**Popover layout rules — max 3 rows per column:**
+
+| Fields | Layout |
+|--------|--------|
+| 1–3    | Single column |
+| 4      | 2×2 grid (2 columns, 2 rows) |
+| 5–6    | 2 columns (3 rows max per column) |
+| 7–9    | 3 columns (3 rows max per column) |
+
+```tsx
+// 1–3 fields: single column (default)
+<div className="flex flex-col gap-4">
+  <h3 className="text-sm font-bold">Filtrar <entities></h3>
+  <Field1 />
+  <Field2 />
+  <Field3 />
+  {/* Aplicar / Limpar */}
+</div>
+
+// 4 fields: 2×2 grid
+<div className="flex flex-col gap-4">
+  <h3 className="text-sm font-bold">Filtrar <entities></h3>
+  <div className="grid grid-cols-2 gap-4">
+    <Field1 />
+    <Field2 />
+    <Field3 />
+    <Field4 />
+  </div>
+  {/* Aplicar / Limpar */}
+</div>
+
+// 5–6 fields: 2 columns, max 3 per column
+<div className="flex flex-col gap-4">
+  <h3 className="text-sm font-bold">Filtrar <entities></h3>
+  <div className="grid grid-cols-2 gap-4">
+    <div className="flex flex-col gap-4">
+      <Field1 />
+      <Field2 />
+      <Field3 />
+    </div>
+    <div className="flex flex-col gap-4">
+      <Field4 />
+      <Field5 />
+    </div>
+  </div>
+  {/* Aplicar / Limpar */}
+</div>
+```
+
+Use `w-80` for single-column popovers, `w-[40rem]` for 2-column layouts.
+
+**2. `<Entity>ActiveFilters`** — Removable pills showing currently active filters.
+
+```
+src/domains/<domain>/components/ui/<entity>-active-filters.tsx
+```
+
+- Each pill shows `label: value` with an X to remove
+- Removing a filter calls `useFilterNavigation().setParams({ param: null })`
+- If removing a parent filter should cascade (e.g., removing cropType clears variety), use a `cascadeRemovals` map
+- The page resolves filter IDs to names **server-side** (e.g., `findCategoryById(categoryId)`) and passes the resolved `filters` array
+
+**Page layout — full structure with tabs, search, and filters:**
+```tsx
+{/* 1. Tabs (status) */}
+<div className="mb-4 flex justify-between border-b">
+  <TableTabs tabs={TABLE_TABS} />
+</div>
+
+{/* 2. Search + Filter button */}
+<div className="mb-6 flex flex-col gap-3">
+  <div className="flex gap-2">
+    <SearchInput placeholder="Pesquisar..." />
+    <<Entity>Filters activeCount={count} current...={...} />
+  </div>
+  <<Entity>ActiveFilters filters={activeFilters} />
+</div>
+```
+
+**Do NOT** use `FilterSelect` or `TableToolbar` for domain filters. `FilterSelect` exists as a shared primitive but the standard pattern for list pages is the Popover + ActiveFilters approach above.
+
 **Rules:**
 - Pages that fetch data are async Server Components — they fetch data directly, no `useEffect`
 - Filters come from `searchParams` — the URL is the source of truth for listing state
 - Parse searchParams using `getSearchParam()` from shared utils — never access raw values directly
+- **Status filters always use `TableTabs`** — never in the filter popover
+- **Every list page must include `<Entity>Filters` and `<Entity>ActiveFilters` components** for non-status filterable fields
+- Filter popover fields must not exceed **3 rows per column** — use multi-column grid for 4+ fields
+- Filter ID resolution (ID → name) happens **server-side** in the page, not in the client component
+- Boolean filters (like `active`) must convert the URL string to boolean before passing to the API: `active === 'true'`
+- Links that open sheets must include `scroll={false}`
 - Pass `query`, `sort`, `order`, `page` from searchParams to the API function
-- Use `TableToolbar` + `SearchInput` for search, `FilterSelect` for dropdowns, `PaginationControls` for pagination
 - `SortableHeader` goes in the column definitions, not in the page — the page only passes sort params to the API
 - Pass parsed data to domain components — pages compose, they don't render complex UI
 
@@ -203,7 +357,7 @@ export default async function <Entity>DetailPage(
             }
           >
             <div className="flex flex-col gap-4">
-              <DetailField label="Nome" icon={<LucideIcon>}>{entity.name}</DetailField>
+              {/* Never include Nome (already in header title) or Status (use badge prop in DetailHeader) */}
               <DetailField label="Criado em" icon={Calendar}>{formattedDate}</DetailField>
             </div>
           </DetailSection>
@@ -216,6 +370,38 @@ export default async function <Entity>DetailPage(
   )
 }
 ```
+
+### Detail page sidebar rules
+
+**Never show in detail fields:**
+- **Nome** — already displayed in the `DetailHeader` title. Repeating it in the sidebar is redundant.
+- **Status** — must be shown as a `StatusBadge` next to the title in `DetailHeader` using the `badge` prop, not as a `DetailField` in the sidebar.
+
+```tsx
+// ✅ Status as badge in header (follows harvest pattern)
+<DetailHeader
+  title={entity.name}
+  icon={<LucideIcon>}
+  badge={
+    <StatusBadge
+      label={statusLabelMap[entity.status]}
+      variant={statusVariantMap[entity.status]}
+    />
+  }
+/>
+
+// ❌ Status as DetailField in sidebar
+<DetailField label="Status" icon={Package}>
+  {entity.active ? 'Ativo' : 'Inativo'}
+</DetailField>
+
+// ❌ Nome as DetailField in sidebar
+<DetailField label="Nome" icon={Package}>
+  {entity.name}
+</DetailField>
+```
+
+These rules apply to **all modules** — inventory, crop, field, etc.
 
 ### Detail page header actions
 
@@ -491,4 +677,12 @@ src/app/(private)/crop-types/[id]/varieties/page.tsx
 
 // ❌ no redirect after deletion
 if (res.ok) { closeDialog() }  // must also router.push to listing page
+
+// ❌ Nome in sidebar detail fields (already in header title)
+<DetailField label="Nome">{entity.name}</DetailField>
+
+// ❌ Status as detail field in sidebar
+<DetailField label="Status">{entity.active ? 'Ativo' : 'Inativo'}</DetailField>
+// CORRECT: use badge prop in DetailHeader
+<DetailHeader title={entity.name} badge={<StatusBadge label="Ativo" variant="active" />} />
 ```
