@@ -156,6 +156,18 @@ cd frontend && pnpm build && pnpm test:e2e    # includes Playwright with MSW on 
 
 If anything fails → back to Phase 3.
 
+**Port check — verify no custom dev ports leaked into tracked files:**
+
+Dev environment uses custom ports to avoid conflicts (configured in `.env` files, which are gitignored). Before committing, verify that tracked files still have the original default ports:
+
+| File | Check | Original values |
+|------|-------|-----------------|
+| `backend/docker-compose.yml` | Port defaults in `${VAR:-default}` syntax | `5432` (PostgreSQL), `6379` (Redis) |
+| `backend/.env.example` | Port values | `PORT=3333`, `DATABASE_URL` with `:5432`, `REDIS_PORT=6379` |
+| `frontend/.env.example` | API URL | `http://localhost:3333` |
+
+If any tracked file contains custom dev ports (4333, 5433, 6381), revert those values to the originals before committing. The `.env` files themselves are gitignored and safe to leave with custom ports.
+
 **Commit:**
 ```bash
 git add <specific files>   # never git add -A

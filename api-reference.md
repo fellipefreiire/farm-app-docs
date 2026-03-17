@@ -199,3 +199,27 @@ If the project uses WebSockets or Server-Sent Events, document them in a separat
 | PATCH | /v1/stock-movements/:id/cancel | Cancel a stock movement | Private |
 | GET | /v1/stock-movements/:id/audit-logs | List audit logs for a stock movement | Private |
 | GET | /v1/stock-balance/:inputId | Get stock balance for an input | Private |
+
+## Schedule
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | /v1/schedules | Create a new schedule for a harvest | Private |
+| GET | /v1/schedules | List schedules (paginated, filterable by status, fieldId, harvestId) | Private |
+| GET | /v1/schedules/:id | Find schedule by ID | Private |
+| PUT | /v1/schedules/:id | Edit a schedule | Private |
+| DELETE | /v1/schedules/:id | Delete a schedule | Private |
+| PATCH | /v1/schedules/:id/activate | Activate a schedule (triggers harvest activation) | Private |
+| PATCH | /v1/schedules/:id/complete | Complete a schedule | Private |
+| PATCH | /v1/schedules/:id/cancel | Cancel a schedule (reverts harvest to UNSCHEDULED) | Private |
+| POST | /v1/schedules/:id/copy | Copy a schedule to another harvest (supports dateMode: offset/absolute, conflictResolution: add/replace) | Private |
+| GET | /v1/schedules/:id/copy-preview | Preview schedule copy mapping without executing (query: targetHarvestId, dateMode) | Private |
+| POST | /v1/schedules/:id/copy-operations | Copy operations from one date to another within a schedule | Private |
+| GET | /v1/schedules/:id/operations | List operations for a schedule (grouped by date, with inputs) | Private |
+| POST | /v1/schedules/:id/operations | Add an operation to a schedule | Private |
+| PUT | /v1/schedules/operations/:id | Edit a schedule operation | Private |
+| DELETE | /v1/schedules/operations/:id | Remove a schedule operation | Private |
+| POST | /v1/schedules/operations/:id/inputs | Add an input to a schedule operation | Private |
+| PUT | /v1/schedules/operation-inputs/:id | Edit a schedule operation input | Private |
+| DELETE | /v1/schedules/operation-inputs/:id | Remove a schedule operation input | Private |
+| GET | /v1/schedules/:id/audit-logs | List audit logs for a schedule | Private |

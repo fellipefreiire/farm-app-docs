@@ -389,6 +389,49 @@ sequenceDiagram
 
 ---
 
+### Copy schedule (wizard) [MVP]
+
+**Trigger:** User clicks "Copiar cronograma" on a schedule's actions menu
+**Actor:** Farm owner, Farm manager
+**Domain:** Schedule
+
+**4-step wizard flow:**
+
+**Step 1 — Destino:**
+1. Wizard opens with two tabs: "Safra existente" and "Nova safra"
+2. **Existing harvest tab:** User selects any harvest via async search (not limited to UNSCHEDULED). Info badge shows harvest status.
+3. **New harvest tab:** User fills inline form (name, crop type, variety, field, dates). Harvest is created via `POST /v1/harvests` when advancing.
+4. If creation fails → stays on Step 1 with validation errors.
+
+**Step 2 — Configuração:**
+1. User selects date mode:
+   - **Offset relativo** (default): Operations are mapped by day offset from source harvest start to target harvest start
+   - **Datas exatas**: Operations keep their original dates
+2. If target already has operations, conflict resolution appears:
+   - **Adicionar** (default): New operations are added alongside existing ones
+   - **Substituir**: Existing operations are soft-deleted before copying. Warning shows count of operations to be removed.
+
+**Step 3 — Preview:**
+1. System calls `GET /v1/schedules/:id/copy-preview` to generate mapping table
+2. Table shows: source date → target date, operation type, input count, status (within range or out of range)
+3. Summary shows: X operations to copy, Y to skip (out of target harvest period)
+4. If replace mode: shows count of existing operations to be removed
+
+**Step 4 — Confirmação:**
+1. Summary card: target harvest (new/existing), date mode, operations to copy/skip
+2. If replace: destructive warning about operations to be removed
+3. User clicks "Copiar Cronograma" → `POST /v1/schedules/:id/copy` with `dateMode` and `conflictResolution`
+4. Success → toast + redirect to new/updated schedule detail page
+
+**Error cases:**
+- Source schedule not found → 404
+- Target harvest not found → 404
+- All operations out of range → "Copiar" button disabled, user can go back and change config
+- Network error on preview → error state with "Voltar" button
+- User can cancel at any step → wizard closes without side effects
+
+---
+
 ## FieldTicket
 
 ### Generate field tickets from schedule [MVP]
