@@ -60,6 +60,7 @@ graph TD
 - User is cross-cutting — every non-public endpoint requires authentication and authorization
 - Audit subscribes to domain events from all domains — never called directly
 - Schedule drives Harvest lifecycle: ScheduleActivatedEvent → Harvest becomes ACTIVE, ScheduleCancelledEvent → Harvest reverts to UNSCHEDULED
+- Solid arrows represent data dependencies resolved at runtime via QueryBus (see `coding-patterns/backend/query-bus.md`). Use cases never import repositories from other domains — they use typed query contracts instead
 - Relationships for planned domains are preliminary and will be refined during implementation
 
 ---
@@ -81,6 +82,7 @@ None in MVP. Infrastructure decisions deferred to post-MVP.
 | **Caching** | Redis for frequently accessed read-only data. Cache invalidation via domain events. |
 | **Logging** | Winston with structured JSON. Domain layer never logs. Controllers log error/warn. Event subscribers log error/info. |
 | **Audit** | Every mutation emits a domain event consumed by the Audit subscriber. Stores actor, action, entity, timestamp, before/after snapshot. |
+| **Cross-domain queries** | QueryBus — static in-process request/reply bus (see `coding-patterns/backend/query-bus.md`). Use cases query other domains via typed query contracts instead of importing their repositories. Subscribers are exempt — they bridge domains directly. Designed to swap to a message broker for microservice migration. |
 | **Pagination** | Mandatory on all listing endpoints. |
 | **Multi-tenancy** | Not implemented in MVP. No design decisions that block future migration (avoid hardcoded single-tenant assumptions). |
 
@@ -108,6 +110,14 @@ None in MVP. Infrastructure decisions deferred to post-MVP.
 ---
 
 ## Decision Log
+
+### 2026-03-17 — QueryBus for cross-domain data queries
+
+**Context:** Health-check detected 18 module boundary violations: use cases importing repositories and error classes from other domains. As the system moves toward microservices, each domain must be independently deployable. Direct repository imports create tight coupling that blocks extraction.
+**Decision:** Introduce a QueryBus — a static in-process request/reply bus in `src/core/query-bus/`. Query contracts (pure data types) live in the responding domain's `application/queries/`. Handlers self-register at NestJS startup via `QueryBusModule` (`@Global`). Use cases call `QueryBus.execute()` instead of injecting cross-domain repositories. Error classes that reference other domains are duplicated locally.
+**Options considered:** (A) QueryBus in core with typed contracts (chosen) / (B) Shared service layer between domains / (C) Event sourcing with projections
+**Rationale:** Option A mirrors the existing DomainEvents pattern (static class, self-registering handlers), requires zero database changes, and maps directly to a message broker for microservice migration. Option B creates a new coupling layer. Option C is overengineered for MVP.
+**Consequences:** 21 use cases refactored (11 group A + 10 audit logs). 5 query contracts, 5 handlers, 3 local error classes created. HTTP modules no longer import cross-domain database modules (QueryBusModule is global). Subscribers remain exempt — they are the intended cross-domain bridge. New coding pattern documented at `docs/coding-patterns/backend/query-bus.md`.
 
 ### 2026-03-10 — Subdomain folders for multi-entity domains
 
