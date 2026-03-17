@@ -12,9 +12,9 @@ Monolithic NestJS backend with a Next.js frontend, connected via REST API. The s
 |--------|---------------|--------|
 | **User** | Authentication, authorization, role-based access, user management | Implemented |
 | **Field** | Field (talhao) registry — area, location, status | Implemented |
-| **Crop** | Crop types, varieties, harvest lifecycle (plan → activate → complete/cancel) | Implemented |
+| **Crop** | Crop types, varieties, harvest lifecycle (unscheduled → active → complete/cancel) | Implemented |
 | **Audit** | Full audit trail of every user action (cross-cutting, event-driven) | Implemented |
-| **Schedule** | Per-field operation planning — operations, inputs, timeline | Planned |
+| **Schedule** | Per-field operation planning — operations (spraying, fertigation), inputs with dosage per 100L, timeline. Drives Harvest activation. | Implemented |
 | **FieldTicket** | Generated from schedule. Review → print → execute → finalize workflow | Planned |
 | **Inventory** | Categories, inputs (insumos), purchases (entradas), stock movements (saídas), stock balance | Implemented |
 | **Supplier** | Supplier registry for tracking input purchase origins | Implemented |
@@ -30,9 +30,9 @@ graph TD
   Field[Field ✓]
   Crop[Crop ✓]
   Audit[Audit ✓]
-  Schedule[Schedule ○]
+  Schedule[Schedule ✓]
   FieldTicket[FieldTicket ○]
-  Inventory[Inventory ●]
+  Inventory[Inventory ✓]
   Supplier[Supplier ✓]
   Financial[Financial ○]
 
@@ -59,6 +59,7 @@ graph TD
 **Notes:**
 - User is cross-cutting — every non-public endpoint requires authentication and authorization
 - Audit subscribes to domain events from all domains — never called directly
+- Schedule drives Harvest lifecycle: ScheduleActivatedEvent → Harvest becomes ACTIVE, ScheduleCancelledEvent → Harvest reverts to UNSCHEDULED
 - Relationships for planned domains are preliminary and will be refined during implementation
 
 ---
@@ -115,6 +116,14 @@ None in MVP. Infrastructure decisions deferred to post-MVP.
 **Options considered:** (A) Subdomain folders within the domain (chosen) / (B) Separate top-level domains per entity
 **Rationale:** Option A preserves the bounded context — CropType, Variety, and Harvest share business rules and reference each other. Option B would lose this semantic grouping and make cross-entity relationships implicit. Infrastructure stays flat because NestJS modules are the unit of composition and splitting them per entity adds unnecessary fragmentation.
 **Consequences:** Import paths change from `@/domain/crop/enterprise/entities/crop-type` to `@/domain/crop/crop-types/enterprise/entities/crop-type`. All coding pattern docs updated with subdomain notes. See `coding-patterns/frontend/domain-organization.md` and `coding-patterns/backend/domain-organization.md`.
+
+### 2026-03-16 — Harvest status PLANNED replaced with UNSCHEDULED
+
+**Context:** The Schedule domain drives the Harvest lifecycle. A Harvest without a Schedule should reflect that state explicitly.
+**Decision:** Replace Harvest status `PLANNED` with `UNSCHEDULED`. Harvest activation is no longer manual — it's triggered by ScheduleActivatedEvent. When a Schedule is cancelled, Harvest reverts to UNSCHEDULED.
+**Options considered:** (A) Add UNSCHEDULED alongside PLANNED / (B) Replace PLANNED with UNSCHEDULED (chosen)
+**Rationale:** Having both PLANNED and UNSCHEDULED creates ambiguity. UNSCHEDULED clearly communicates "no schedule exists yet". The Schedule domain has its own PLANNED status for "schedule exists but not yet active".
+**Consequences:** Manual ActivateHarvest endpoint removed. Harvest activation only via Schedule domain events. All existing PLANNED data migrated to UNSCHEDULED.
 
 ### 2026-03-09 — Single-tenant MVP with multi-tenant awareness
 

@@ -48,6 +48,9 @@ The `health-check-counter` tracks how many features have been merged since the l
 - Unit price calculation from total purchase value (analytics/reporting)
 - Automatic StockMovement (exit) triggered by FieldTicket finalization — implement when FieldTicket domain is built (MVP, not post-MVP)
 
+### Schedule
+- Melhorar "Copiar Operações" e "Copiar Cronograma" — criar task dedicada (pendente desde 2026-03-16)
+
 ### Supplier
 - Price comparison across suppliers for the same input
 - Purchase history and supplier performance tracking
