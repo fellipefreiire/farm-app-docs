@@ -379,7 +379,9 @@ import { right, type Either } from '@/core/either'
 import type { CursorPaginationMeta } from '@/core/repositories/pagination-params'
 import type { AuditLog } from '@/domain/audit-log/enterprise/entities/audit-log'
 import type { AuditLogRepository } from '@/domain/audit-log/application/repositories/audit-log-repository'
-import type { UsersRepository } from '@/domain/user/application/repositories/users-repository'
+import { QueryBus } from '@/core/query-bus/query-bus'
+import { FindUsersByIdsQuery, type FindUsersByIdsQueryResult }
+  from '@/domain/user/application/queries/find-users-by-ids.query'
 import type { <Related>Repository } from '@/domain/<domain>/application/repositories/<related>-repository'
 import { extractChangeIds } from '@/shared/utils/extract-change-ids'
 
@@ -404,8 +406,7 @@ type List<Entity>AuditLogsUseCaseResponse = Either<
 export class List<Entity>AuditLogsUseCase {
   constructor(
     private auditLogRepository: AuditLogRepository,
-    private usersRepository: UsersRepository,
-    private <related>Repository: <Related>Repository,  // only if entity has foreign IDs to resolve
+    private <related>Repository: <Related>Repository,  // only if entity has foreign IDs to resolve (same domain)
   ) {}
 
   async execute({
@@ -420,12 +421,14 @@ export class List<Entity>AuditLogsUseCase {
       limit,
     })
 
-    // 1. Resolve actor names
+    // 1. Resolve actor names via QueryBus (User is a different domain)
     const actorIds = [...new Set(result.items.map((log) => log.actorId))]
-    const actors = await this.usersRepository.findManyByIds(actorIds)
-    const actorNames = new Map(actors.map((a) => [a.id.toString(), a.name]))
+    const actors = await QueryBus.execute<FindUsersByIdsQueryResult>(
+      new FindUsersByIdsQuery(actorIds),
+    )
+    const actorNames = new Map(actors.map((a) => [a.id, a.name]))
 
-    // 2. Resolve domain-specific foreign IDs from changes
+    // 2. Resolve domain-specific foreign IDs from changes (same-domain repos only)
     const resolvedNames = new Map<string, string>()
 
     const relatedIds = extractChangeIds(result.items, '<relatedField>Id')
@@ -447,6 +450,8 @@ export class List<Entity>AuditLogsUseCase {
 ```
 
 **Key patterns:**
+- Actor name resolution uses **QueryBus** (`FindUsersByIdsQuery`) — User is a different domain, never import `UsersRepository` directly
+- Domain-specific foreign ID resolution (e.g. variety → cropType) uses **direct repository injection** — these are within the same domain
 - Each domain use case knows which foreign IDs exist in its changes (e.g. variety knows `cropTypeId`, harvest knows `cropTypeId` + `varietyId`)
 - Use `extractChangeIds()` from `@/shared/utils/extract-change-ids` to extract IDs from `{ from, to }` change fields
 - Batch-load with `findManyByIds()` — never loop with individual `findById` calls
@@ -503,6 +508,37 @@ await this.<entity>Repository.save(entity)
 
 ---
 
+## Cross-domain data access
+
+Use cases **never** import repositories or error classes from other domains. When a use case needs data from another domain, use the QueryBus:
+
+```ts
+import { QueryBus } from '@/core/query-bus/query-bus'
+import { FindHarvestQuery, type FindHarvestQueryResult }
+  from '@/domain/crop/harvests/application/queries/find-harvest.query'
+import { HarvestNotFoundError } from './errors/harvest-not-found-error'  // local copy
+
+const harvest = await QueryBus.execute<FindHarvestQueryResult>(
+  new FindHarvestQuery(harvestId),
+)
+
+if (!harvest) {
+  return left(new HarvestNotFoundError(harvestId))
+}
+```
+
+**What's allowed to import from other domains:**
+- Query contracts (`application/queries/*.query.ts`) — pure data types, no dependencies
+- Nothing else — no repositories, no error classes, no entities
+
+**What's NOT cross-domain:**
+- Subdomains within the same domain (e.g., crop/harvests → crop/crop-types) — direct repository import is fine
+- `AuditLogRepository` — shared service, import freely
+
+See `query-bus.md` for the full pattern, existing queries, and how to add new ones.
+
+---
+
 ## Rules
 
 - Always `@Injectable()` — use cases are NestJS providers (this is a pragmatic trade-off: pure DDD avoids framework decorators in domain, but NestJS requires `@Injectable()` for dependency injection without custom provider factories)
@@ -511,6 +547,7 @@ await this.<entity>Repository.save(entity)
 - Left side lists all possible error types — if none, use `null`
 - Always include a one-line JSDoc comment describing what the use case does
 - **Never import** Prisma, HTTP types (Request, Response), or NestJS decorators beyond `@Injectable()`
+- **Never import** repositories or error classes from other domains — use QueryBus for cross-domain data (see `query-bus.md`)
 - **Never contain business logic** — business rules belong in the entity
 - **Never call another use case** — compose at the controller level if needed
 - List use cases always return `PaginationMeta` — never return unbounded arrays

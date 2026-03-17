@@ -72,6 +72,7 @@ cd frontend && pnpm audit
 - Paginated results on all list use cases (offset or cursor)
 - No N+1 queries in repository implementations (no queries inside loops)
 - No logging in domain layer (`src/domain/`)
+- **No cross-domain repository or error imports in use cases** — use cases must use QueryBus for cross-domain data (see `coding-patterns/backend/query-bus.md`). Allowed cross-domain imports in use cases: query contracts (`application/queries/*.query.ts`) and `AuditLogRepository` (shared service). Subscribers are exempt.
 The checks above are mandatory for Phase 3. For a deeper audit, run `/compliance-check` (optional — recommended for new domains or large features).
 
 **On threshold failure:**
