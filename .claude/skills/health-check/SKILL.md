@@ -65,12 +65,15 @@ For each outdated dependency found:
 - Run Phase 3 validation. If passing → done.
 
 **Major versions:**
-1. Read the changelog and migration guide before updating anything
-2. Classify the breaking change:
-   - **Architectural change** (routing system, rendering model, module system) → **do not update**. Open a GitHub Issue to plan a dedicated migration. When ready, use `/migrate` to execute.
+1. **Check `docs/reminders.md` → "Pinned dependency versions" table first.** If the package is listed there, do NOT flag it as outdated in the report — instead, re-evaluate the "Re-evaluate when" column to check if the blocker was resolved. If resolved, proceed with the update and remove the entry from the table. If still blocked, skip silently.
+2. Read the changelog and migration guide before updating anything
+3. Classify the breaking change:
+   - **Architectural change** (routing system, rendering model, module system) → **do not update**. Open a GitHub Issue to plan a dedicated migration. When ready, use `/migrate` to execute. **Add an entry to the "Pinned dependency versions" table** in `docs/reminders.md` with the reason and re-evaluation condition.
+   - **Peer dependency conflict** → **do not update**. **Add an entry to the pinned table** with the blocking peer and when to re-check.
+   - **LTS mismatch** (e.g., `@types/node` ahead of Node LTS) → **do not update**. **Add an entry to the pinned table** with the LTS cycle date.
    - **API rename/signature change** → update all usages, run Phase 3
    - **Deprecated function with replacement** → replace all usages, run Phase 3
-3. If in doubt whether a change is architectural → do not update, open issue
+4. If in doubt whether a change is architectural → do not update, open issue, add to pinned table
 
 ---
 
@@ -100,6 +103,12 @@ For each outdated dependency found:
 |---------|---------|--------|------|--------|
 | <name> | X.Y.Z | A.B.C | patch | updated |
 | <name> | X.Y.Z | A.B.C | major | issue opened |
+
+### Pinned Dependencies (re-evaluated)
+| Package | Pinned at | Latest | Still blocked? | Reason |
+|---------|-----------|--------|----------------|--------|
+| <name> | X.Y.Z | A.B.C | yes/no | <blocker status> |
+<!-- Re-evaluate each entry from docs/reminders.md "Pinned dependency versions" table. If unblocked, update and remove from pinned table. -->
 
 ### Architecture
 - [ ] Layer violations found: <list or "none">

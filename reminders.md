@@ -29,6 +29,18 @@ The `health-check-counter` tracks how many features have been merged since the l
 
 ---
 
+## Pinned dependency versions
+
+Dependencies listed here were intentionally kept at their current version during a health-check. They must **not** be flagged as outdated in future health-checks — but they **must** be re-evaluated each time to check if the blocker was resolved (e.g., peer dep updated, migration completed).
+
+| Package | Repo | Pinned at | Latest skipped | Reason | Re-evaluate when |
+|---------|------|-----------|----------------|--------|------------------|
+| `class-validator` | backend | ^0.14.4 | 0.15.1 | Peer dependency conflict: `@nestjs/mapped-types` requires `^0.13.0 \|\| ^0.14.0` | `@nestjs/mapped-types` releases a version supporting `^0.15` |
+| `@types/node` | backend + frontend | ^24.x | 25.x | Node 24 is LTS; @types/node must match runtime LTS version | Node 26 becomes LTS (October 2026) — then update to `@types/node@^26` |
+| `eslint` | frontend | ^9.x | 10.x | Architectural breaking change: removes `.eslintrc` config system entirely. Dedicated migration needed (fellipefreiire/farm-app-docs#22) | Issue #22 is completed |
+
+---
+
 ## Gotchas
 
 <!-- Add gotchas discovered during development. Remove them when they are resolved or no longer relevant. -->
