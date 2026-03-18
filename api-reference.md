@@ -143,6 +143,32 @@ If the project uses WebSockets or Server-Sent Events, document them in a separat
 | PATCH | /v1/harvests/:id/cancel | Cancel a harvest | Private |
 | GET | /v1/harvests/:id/audit-logs | List audit logs for a harvest | Private |
 
+## Fleet
+
+### Vehicles
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | /v1/vehicles | Create a new vehicle | Private |
+| GET | /v1/vehicles | List vehicles (paginated, searchable, filterable by active) | Private |
+| GET | /v1/vehicles/:id | Find vehicle by ID | Private |
+| PUT | /v1/vehicles/:id | Edit a vehicle | Private |
+| DELETE | /v1/vehicles/:id | Delete a vehicle | Private |
+| PATCH | /v1/vehicles/:id/toggle-status | Toggle vehicle active/inactive | Private |
+| GET | /v1/vehicles/:id/audit-logs | List audit logs for a vehicle | Private |
+
+### Implements
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | /v1/implements | Create a new implement | Private |
+| GET | /v1/implements | List implements (paginated, searchable, filterable by active, type) | Private |
+| GET | /v1/implements/:id | Find implement by ID | Private |
+| PUT | /v1/implements/:id | Edit an implement | Private |
+| DELETE | /v1/implements/:id | Delete an implement | Private |
+| PATCH | /v1/implements/:id/toggle-status | Toggle implement active/inactive | Private |
+| GET | /v1/implements/:id/audit-logs | List audit logs for an implement | Private |
+
 ## Supplier
 
 | Method | Path | Description | Auth |

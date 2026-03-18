@@ -79,3 +79,15 @@ The stock of inputs, seeds, and harvested products available on the farm. Code: 
 ### Fornecedor
 A supplier from whom the farm purchases inputs. Code: `Supplier`
 - **Context:** `Supplier` entity in the `supplier` domain. UI label: "Fornecedor".
+
+### Frota
+The collection of vehicles and implements owned by the farm. Code: `Fleet`
+- **Context:** `Fleet` domain. UI label: "Frota".
+
+### Veículo
+A motorized vehicle used in farm operations (initially tractors only). Code: `Vehicle`
+- **Context:** `Vehicle` entity in the `fleet` domain (vehicles subdomain). UI label: "Veículo".
+
+### Implemento
+An agricultural attachment or tool used with vehicles (sprayers, spreaders, planters, etc.). Code: `Implement`
+- **Context:** `Implement` entity in the `fleet` domain (implements subdomain). UI label: "Implemento".

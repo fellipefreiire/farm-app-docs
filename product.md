@@ -22,6 +22,7 @@ Farm management platform for crop producers. Helps farmers plan field operations
 - **FieldTicket** — generated from schedule, pre-populated with inputs per field per day. Review → print → execute → return → finalize workflow
 - **Inventory (Estoque)** — inputs, seeds, harvested products, stock control
 - **Supplier (Fornecedor)** — supplier registry, input purchase tracking for future price comparison
+- **Fleet (Frota)** — vehicle and implement registry for tracking tractors and agricultural implements used in field operations
 - **Financial** — revenue, expenses, cost per crop/field
 - **Audit** — full audit trail of every user action in the system
 

@@ -78,7 +78,7 @@ The checks above are mandatory for Phase 3. For a deeper audit, run `/compliance
 **On threshold failure:**
 - Coverage below minimum → write additional tests targeting uncovered lines. Re-run and verify.
 - Mutation score below minimum → analyze surviving mutants, add assertions that kill them. Re-run and verify.
-- Playwright failing → check screenshots in `test-results/`, read error context. Common causes: (1) stale dev server without MSW on port 3001 — `rm -f .next/dev/lock`, (2) MSW handler response shape doesn't match Zod schema — compare with `src/domains/<domain>/schemas/`, (3) toast/status text in English instead of Portuguese, (4) clicking `stacked-sheet-close` after form auto-closes. See `docs/coding-patterns/frontend/e2e-test.md` Troubleshooting section.
+- Playwright failing → check screenshots in `test-results/`, read error context. Common causes: (1) stale dev server without MSW on E2E port (DEV_PORT + 1) — `rm -f .next/dev/lock`, (2) MSW handler response shape doesn't match Zod schema — compare with `src/domains/<domain>/schemas/`, (3) toast/status text in English instead of Portuguese, (4) clicking `stacked-sheet-close` after form auto-closes. See `docs/coding-patterns/frontend/e2e-test.md` Troubleshooting section.
 - If after 2 rounds the threshold still isn't met → present the gap to the user with the specific uncovered lines or surviving mutants, and ask whether to continue writing tests or accept the current score with justification in the PR body.
 
 **Never claim Phase 3 is done without fresh verification output.**
@@ -154,10 +154,10 @@ When pushing back on feedback: use technical reasoning and evidence. Never use s
 **Run fresh tests before committing — never rely on previous runs:**
 ```bash
 cd backend && pnpm test && pnpm test:e2e
-cd frontend && pnpm build && pnpm test:e2e    # includes Playwright with MSW on port 3001
+cd frontend && pnpm build && pnpm test:e2e    # includes Playwright with MSW on E2E port (DEV_PORT + 1)
 ```
 
-**Before running `pnpm test:e2e` (Playwright):** ensure no stale lock file exists (`rm -f frontend/.next/dev/lock`) and port 3001 is free. See `docs/coding-patterns/frontend/e2e-test.md` for troubleshooting.
+**Before running `pnpm test:e2e` (Playwright):** ensure no stale lock file exists (`rm -f frontend/.next/dev/lock`) and E2E port (DEV_PORT + 1) is free. See `docs/coding-patterns/frontend/e2e-test.md` for troubleshooting.
 
 If anything fails → back to Phase 3.
 

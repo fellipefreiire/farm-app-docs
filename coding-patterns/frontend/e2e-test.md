@@ -42,7 +42,7 @@ frontend/
 
 ```
 Playwright (test process)
-  └→ browser navigates to Next.js (localhost:3001 — dedicated E2E port)
+  └→ browser navigates to Next.js (localhost:4001 — dedicated E2E port, DEV_PORT + 1)
        └→ Next.js server renders page (SSR)
             └→ server action or page fetch calls API (localhost:3333)
                  └→ MSW intercepts the request inside the Node.js process
@@ -402,7 +402,8 @@ Actual `data-testid` patterns used in the codebase:
 // playwright.config.ts
 import { defineConfig } from '@playwright/test'
 
-const E2E_PORT = 3001
+const DEV_PORT = 4000
+const E2E_PORT = Number(process.env.E2E_PORT ?? DEV_PORT + 1)
 
 export default defineConfig({
   testDir: './tests',
@@ -424,7 +425,7 @@ export default defineConfig({
 ```
 
 **Key settings:**
-- `E2E_PORT = 3001` — dedicated port for E2E tests. The dev server runs on 3000 for development — using a separate port prevents conflicts. If tests reuse an existing dev server on 3000 that was started **without** `ENABLE_MSW=true`, MSW won't be active and all auth-dependent tests will fail silently.
+- `E2E_PORT = DEV_PORT + 1` — derived from the frontend dev port (currently 4000 → E2E on 4001). Always uses dev port + 1 to avoid conflicts with other projects. Never hardcode a fixed port. If tests reuse an existing dev server that was started **without** `ENABLE_MSW=true`, MSW won't be active and all auth-dependent tests will fail silently.
 - `workers: 1` — mandatory because MSW state is shared across all tests
 - `ENABLE_MSW=true` — activates MSW via `instrumentation.ts`
 - `reuseExistingServer` — reuses running dev server locally, starts fresh in CI
@@ -459,7 +460,7 @@ If tests fail on `page.goto()` or the dev server doesn't start, check for stale 
 rm -f frontend/.next/dev/lock
 
 # Kill residual Next.js processes on E2E port
-lsof -i :3001 -sTCP:LISTEN   # check if something is listening
+lsof -i :4001 -sTCP:LISTEN   # check if something is listening
 pkill -f "next dev"           # kill if needed
 ```
 
@@ -467,7 +468,7 @@ pkill -f "next dev"           # kill if needed
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| All auth tests timeout on `waitForURL('/dashboard')` | Dev server running on port 3000 without MSW, Playwright reusing it | Use dedicated port 3001 (already configured). Ensure no stale server on 3001. |
+| All auth tests timeout on `waitForURL('/dashboard')` | Dev server running on dev port without MSW, Playwright reusing it | Use dedicated port (DEV_PORT + 1, currently 4001). Ensure no stale server on that port. |
 | `page.goto()` fails with connection refused | `.next/dev/lock` file prevents server startup | `rm -f frontend/.next/dev/lock` |
 | ZodError on page load | MSW handler response shape doesn't match Zod schema | Compare handler interface with `src/domains/<domain>/schemas/`. Common: missing new field added to entity. |
 | `strict mode violation: resolved to 2 elements` | `getByText` matches both table cell and toast | Use `getByRole('cell', { name: '...' })` for table data |

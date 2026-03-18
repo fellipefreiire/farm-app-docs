@@ -46,7 +46,9 @@ Dependencies listed here were intentionally kept at their current version during
 <!-- Add gotchas discovered during development. Remove them when they are resolved or no longer relevant. -->
 <!-- Format: one line per gotcha, prefixed with dash. Be specific — include file, library, or context. -->
 
-(none)
+- **Turbopack cache corruption**: If Playwright tests hang with `turbo-persistence` panics (`range start index out of range for slice`), delete `frontend/.next/` entirely and re-run. The turbopack persistent cache can become corrupt after branch switches or large file changes.
+- **Stryker CLI --mutate overrides config exclusions**: When using `--mutate 'src/domain/x/**/*.ts'` it replaces the entire `mutate` array from `stryker.config.mjs`, including `!src/**/__tests__/**` exclusions. Use specific paths like `--mutate 'src/domain/x/**/use-cases/*.ts'` to avoid mutating test files.
+- **Prisma migrate dev shadow DB enum issue**: `prisma migrate dev` fails with `P3006` on migrations that add enum values and use them in the same transaction. Workaround: use `prisma db push` + manual migration file + `prisma migrate resolve --applied`.
 
 ---
 
@@ -66,4 +68,14 @@ Dependencies listed here were intentionally kept at their current version during
 ### Supplier
 - Price comparison across suppliers for the same input
 - Purchase history and supplier performance tracking
+
+### Fleet
+- Maintenance scheduling (preventive and corrective)
+- Fuel tracking and consumption per vehicle
+- Operational hours tracking
+- Cost per vehicle/implement
+- Operator assignment (link to User)
+- Additional VehicleType values (MOTORCYCLE, CAR, TRUCK)
+- Vehicle-implement compatibility matrix
+- Vehicle inspection checklists
 

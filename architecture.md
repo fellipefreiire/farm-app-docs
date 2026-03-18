@@ -18,6 +18,7 @@ Monolithic NestJS backend with a Next.js frontend, connected via REST API. The s
 | **FieldTicket** | Generated from schedule. Review → print → execute → finalize workflow | Planned |
 | **Inventory** | Categories, inputs (insumos), purchases (entradas), stock movements (saídas), stock balance | Implemented |
 | **Supplier** | Supplier registry for tracking input purchase origins | Implemented |
+| **Fleet** | Vehicle and implement registry for tractors and agricultural implements | Implemented |
 | **Financial** | Revenue, expenses, cost per crop/field | Post-MVP |
 
 ---
@@ -34,12 +35,14 @@ graph TD
   FieldTicket[FieldTicket ○]
   Inventory[Inventory ✓]
   Supplier[Supplier ✓]
+  Fleet[Fleet ✓]
   Financial[Financial ○]
 
   Schedule --> Field
   Schedule --> Crop
   Schedule --> Inventory
   FieldTicket --> Schedule
+  FieldTicket --> Fleet
   FieldTicket -->|event: FieldTicketFinalized| Inventory
   Financial --> Inventory
   Financial --> Crop
@@ -51,6 +54,7 @@ graph TD
   Audit -.->|observes| FieldTicket
   Audit -.->|observes| Inventory
   Audit -.->|observes| Supplier
+  Audit -.->|observes| Fleet
   Audit -.->|observes| Financial
 ```
 

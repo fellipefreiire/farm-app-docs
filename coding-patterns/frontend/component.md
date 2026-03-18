@@ -344,6 +344,31 @@ export function Create<Entity>Form() {
         data-testid="<entity>-create-form"
       >
         <InputField control={form.control} label="Nome" name="name" data-testid="<entity>-name-input" />
+
+        {/* Numeric fields: NEVER use type="number". Use type="text" with mask + numeric prop. */}
+        <InputField
+          control={form.control}
+          label="Ano"
+          name="year"
+          inputMode="numeric"
+          maxLength={4}
+          mask={maskDigitsOnly}
+          numeric
+          placeholder="Ex: 2024"
+          data-testid="<entity>-year-input"
+        />
+
+        {/* Decimal fields: use inputMode="decimal" with maskPositiveFloat */}
+        <InputField
+          control={form.control}
+          label="Capacidade (L)"
+          name="capacity"
+          inputMode="decimal"
+          mask={maskPositiveFloat}
+          numeric
+          placeholder="Ex: 2000"
+          data-testid="<entity>-capacity-input"
+        />
         <div className="mt-auto ml-auto flex gap-4">
           <Button type="submit" data-testid="<entity>-create-submit">
             Criar <entity>
@@ -645,4 +670,14 @@ await createAction(data)
 // ❌ showEdit=true on detail page where edit button exists
 <ActionsPopover entity={entity} />
 // ✅ <ActionsPopover entity={entity} showEdit={false} />
+
+// ❌ input type="number" for numeric fields
+<InputField type="number" name="year" ... />
+// ✅ text input with mask, inputMode, and numeric prop
+<InputField name="year" inputMode="numeric" maxLength={4} mask={maskDigitsOnly} numeric ... />
+
+// ❌ input type="number" for decimal fields
+<InputField type="number" name="capacity" ... />
+// ✅ text input with decimal mask
+<InputField name="capacity" inputMode="decimal" mask={maskPositiveFloat} numeric ... />
 ```
