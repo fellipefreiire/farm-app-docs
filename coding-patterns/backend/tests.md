@@ -6,6 +6,29 @@ Eleven types of tests: **unit tests** (use cases), **E2E tests** (HTTP controlle
 >
 > For mutation testing (Stryker) — see `mutation-testing.md`. All unit tests (`.spec.ts`) are subject to mutation testing during Phase 3 validation.
 
+## Table of contents
+
+- [File locations](#file-locations)
+- [1. Unit Test (use case)](#1-unit-test-use-case)
+  - [Edit use case test](#edit-use-case-test)
+  - [List use case test](#list-use-case-test)
+  - [List use case with cursor pagination test](#list-use-case-with-cursor-pagination-test)
+  - [Delete use case test](#delete-use-case-test)
+  - [Toggle status use case test](#toggle-status-use-case-test)
+  - [Use case tests with QueryBus (cross-domain data)](#use-case-tests-with-querybus-cross-domain-data)
+- [2. Factory](#2-factory)
+- [3. E2E Test (controller)](#3-e2e-test-controller)
+- [4. Event Subscriber Unit Test](#4-event-subscriber-unit-test)
+- [4b. Event Test (E2E)](#4b-event-test-e2e)
+- [5. Core Primitive Tests](#5-core-primitive-tests)
+- [6. Mapper Test](#6-mapper-test)
+- [7. Presenter Test](#7-presenter-test)
+- [8. Shared Utils Test](#8-shared-utils-test)
+- [9. Repository Cache Test (E2E)](#9-repository-cache-test-e2e)
+- [10. Middleware E2E Test](#10-middleware-e2e-test)
+- [Rules (all tests)](#rules-all-tests)
+- [Anti-patterns](#anti-patterns)
+
 ---
 
 ## File locations

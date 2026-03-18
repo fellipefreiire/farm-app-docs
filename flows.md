@@ -1,5 +1,32 @@
 # Flows
 
+## How to add a new flow
+
+Each flow follows this format:
+
+```markdown
+### Flow name [MVP]
+
+**Trigger:** What initiates the flow
+**Actor:** Who performs the action
+**Domain:** Which domain(s) are involved
+
+**Happy path:**
+1. Step-by-step description of the normal flow
+
+**Error cases:**
+- Error condition → expected behavior (toast, inline error, redirect)
+```
+
+**Guidelines:**
+- Group flows by domain
+- Include both happy path and error cases
+- Error messages should be in Portuguese (frontend i18n responsibility)
+- Use `[MVP]` tag for features in the minimum viable product
+- Update this document in Phase 4 whenever user flows are added or changed
+
+---
+
 ## Auth
 
 ### Sign in [MVP]

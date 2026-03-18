@@ -2,6 +2,29 @@
 
 Pages are Server Components that compose domain components. Pages that fetch data must be async. They live in the Next.js App Router file structure and handle routing, data loading, search params, and error/loading states.
 
+## Table of contents
+
+- [File locations](#file-locations)
+- [Route groups](#route-groups)
+- [List page](#list-page)
+  - [Status filtering — always use TableTabs](#status-filtering--always-use-tabletabs)
+  - [List page filter architecture](#list-page-filter-architecture)
+  - [PreserveParamsLink](#preserveparamslink)
+  - [ViewToggle (list/card views)](#viewtoggle-listcard-views)
+- [Detail page (top-level entity)](#detail-page-top-level-entity)
+  - [Detail page sidebar rules](#detail-page-sidebar-rules)
+  - [Detail page header actions](#detail-page-header-actions)
+  - [Detail page linked fields](#detail-page-linked-fields)
+  - [Related tables in detail pages](#related-tables-in-detail-pages)
+- [Detail page (sub-entity / submodule)](#detail-page-sub-entity--submodule)
+- [Sub-entity listing page](#sub-entity-listing-page)
+- [Audit page](#audit-page)
+- [Post-deletion redirect](#post-deletion-redirect)
+- [loading.tsx](#loadingtsx)
+- [not-found.tsx](#not-foundtsx)
+- [Rules](#rules)
+- [Anti-patterns](#anti-patterns)
+
 ---
 
 ## File locations

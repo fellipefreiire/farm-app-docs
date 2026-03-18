@@ -55,6 +55,8 @@ cd backend && pnpm prisma migrate dev
 
 ## Validation
 
+> **Note:** The quality thresholds and validation commands below follow the same standards as Phase 3 in `docs/shared-phases.md`. Refer to that document for the full threshold table and failure handling.
+
 ```bash
 # Confirm the specific bug test now passes
 cd backend && pnpm test --testPathPattern=<relevant-spec>

@@ -53,7 +53,6 @@
       "Bash(mkdir *)",
       "Bash(ln -s *)",
       "Bash(rm docs/plans/*)",
-      "Bash(rm -rf .next)",
       "Bash(cat *)",
       "Bash(wc *)",
       "Bash(ls *)",

@@ -205,7 +205,7 @@ claude --add-dir ./backend --add-dir ./frontend
 | 5 | Resilience | Either<Error, { data: ... }> in use cases |
 | 6 | Quality | AAA pattern in tests, InMemoryRepository for unit tests, low cyclomatic complexity |
 | 7 | Data | Versioned Prisma migrations, mappers (toDomain/toPrisma), constraints (FK, unique). Always run `prisma migrate dev` after any schema change — database is always local. |
-| 8 | Events | Cross-module side effects via Domain Events (fire-and-forget), cross-module data queries via QueryBus (request/reply). Use cases never import repositories from other domains. |
+| 8 | Events | Cross-domain side effects via Domain Events (fire-and-forget), cross-domain data queries via QueryBus (request/reply). Use cases never import repositories from other domains. |
 | 9 | Secrets | Never commit `.env` files — must be in `.gitignore`. Never hardcode credentials, tokens or secrets in code. Environment variables always read from `process.env`. If a new env var is needed, add it to `.env.example` with a placeholder value. |
 | 10 | Accessibility | Semantic HTML elements (`button`, `nav`, `main`, `section`, not generic `div`). All interactive elements must be keyboard-navigable. Form inputs must have associated `label` elements. Images must have `alt` text. ARIA attributes only when semantic HTML is insufficient. |
 | 11 | Logging | Winston structured JSON. Levels: `error` (unrecoverable failures — needs human attention), `warn` (recoverable issues — retries, fallbacks, cache misses), `info` (business events — entity created, payment processed), `debug` (technical details — disabled in production via `LOG_LEVEL`). Required fields: `level`, `message`, `domain`, `timestamp`. Optional: `entityId`, `actorId`, `error`. Domain layer never logs. Use cases never log directly. Controllers log `error`/`warn`. Event subscribers log `error`/`info`. Never log passwords, tokens, PII, or full request bodies. Never use `console.log` in production code. |
@@ -416,6 +416,7 @@ If still ambiguous after applying the rule → ask the user to clarify before pr
 | Migration | `/migrate` | Skip |
 | Evaluate | `/evaluate` | Skip |
 | Quality | `/compliance-check` `/code-audit` `/health-check` | Warn — note gap in report |
+| Project Setup | `/project-setup` | N/A — triggered automatically by Step 0 |
 
 **When blocking for missing domain rules**, inform the user and ask for confirmation before proceeding:
 > "The `<domain>` domain doesn't have documented rules in `docs/rules/<domain>.md` yet. I need to run `/domain-discovery` before proceeding. Should I start now?"

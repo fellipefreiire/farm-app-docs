@@ -1,6 +1,6 @@
 # API Reference
 
-Quick reference of all available endpoints. This document gives Claude a fast overview of what exists without reading every controller. For full request/response details, check the Swagger documentation.
+Quick reference of all available endpoints. This document gives Claude a fast overview of what exists without reading every controller. For full request/response details, check the Swagger documentation at `http://localhost:4333/api` (requires the backend dev server running).
 
 **Why this matters:** When implementing a new feature, Claude needs to know which endpoints already exist to avoid duplicating work or creating inconsistent routes. This document is the single source of truth for "what endpoints does the API have?".
 

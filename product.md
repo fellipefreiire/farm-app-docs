@@ -1,5 +1,7 @@
 # Product
 
+**Why this matters:** This is the foundational document that defines the product scope, target users, and core domains. All other docs (architecture, flows, rules) derive from the decisions made here. Claude uses this to understand the business context behind every implementation request.
+
 ## Product overview
 
 Farm management platform for crop producers. Helps farmers plan field operations, track input usage, manage inventory, and maintain full auditability of all activities. Built as a SaaS — single-tenant for MVP, designed to not block future multi-tenant migration.

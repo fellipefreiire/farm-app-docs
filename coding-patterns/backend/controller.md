@@ -4,6 +4,26 @@ Controllers handle HTTP routing and input validation. They delegate all logic to
 
 > This pattern also covers DTOs (`dtos/`), Error Filters (`filters/`), and NestJS Modules — see sections below.
 
+## Table of contents
+
+- [File locations](#file-locations)
+- [Authentication — default behavior](#authentication--default-behavior)
+- [Structure — create (with body, CASL, full Swagger)](#structure--create-with-body-casl-full-swagger)
+- [Structure — list (query params, CASL or Public)](#structure--list-query-params-casl-or-public)
+- [Structure — list with cursor pagination](#structure--list-with-cursor-pagination)
+- [Structure — sub-resource audit logs (per-entity)](#structure--sub-resource-audit-logs-per-entity)
+- [Structure — find by ID (resource-level CASL)](#structure--find-by-id-resource-level-casl)
+- [Structure — edit (body + param, CASL)](#structure--edit-body--param-casl)
+- [Structure — delete (param only, CASL)](#structure--delete-param-only-casl)
+- [Structure — toggle status (param only, CASL)](#structure--toggle-status-param-only-casl)
+- [DTOs (Swagger documentation)](#dtos-swagger-documentation)
+- [Error filter](#error-filter)
+- [Module](#module)
+- [ControllersModule (aggregator)](#controllersmodule-aggregator)
+- [Pipes](#pipes)
+- [Rules](#rules)
+- [Anti-patterns](#anti-patterns)
+
 ---
 
 ## File locations

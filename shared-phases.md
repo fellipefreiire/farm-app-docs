@@ -88,6 +88,8 @@ The checks above are mandatory for Phase 3. For a deeper audit, run `/compliance
 
 ## Phase 4 — Documentation
 
+**How Claude uses this phase:** After validation passes, update any project docs affected by the implementation. This keeps docs in sync with code. Only touch docs that were actually affected — do not update unrelated files.
+
 Update only what changed — do not update docs that were not affected:
 
 - `docs/architecture.md` → if a new domain or module was added
@@ -105,6 +107,8 @@ rm docs/plans/YYYY-MM-DD-<feature-name>.md
 ---
 
 ## Phase 5 — Code Review (wait for approval)
+
+**How Claude uses this phase:** Self-review the implementation against coding patterns, then present a structured summary to the user. Never commit without explicit user approval. This is the quality gate before code enters the repository.
 
 **Before presenting to the user — self-review:**
 
@@ -161,11 +165,11 @@ If anything fails → back to Phase 3.
 
 Dev environment uses custom ports to avoid conflicts (configured in `.env` files, which are gitignored). Before committing, verify that tracked files still have the original default ports:
 
-| File | Check | Original values |
-|------|-------|-----------------|
-| `backend/docker-compose.yml` | Port defaults in `${VAR:-default}` syntax | `5432` (PostgreSQL), `6379` (Redis) |
-| `backend/.env.example` | Port values | `PORT=3333`, `DATABASE_URL` with `:5432`, `REDIS_PORT=6379` |
-| `frontend/.env.example` | API URL | `http://localhost:3333` |
+| File | Check | Original values | Custom dev values (must NOT appear) |
+|------|-------|-----------------|-------------------------------------|
+| `backend/docker-compose.yml` | Port defaults in `${VAR:-default}` syntax | `5432` (PostgreSQL), `6379` (Redis) | `5433`, `6381` |
+| `backend/.env.example` | Port values | `PORT=3333`, `DATABASE_URL` with `:5432`, `REDIS_PORT=6379` | `4333`, `5433`, `6381` |
+| `frontend/.env.example` | API URL | `http://localhost:3333` | `http://localhost:4333` |
 
 If any tracked file contains custom dev ports (4333, 5433, 6381), revert those values to the originals before committing. The `.env` files themselves are gitignored and safe to leave with custom ports.
 

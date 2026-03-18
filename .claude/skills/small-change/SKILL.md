@@ -66,7 +66,7 @@ Return:
 
 ## Phase 2 — Implementation
 
-Make changes in dependency order. Keep TDD: update existing tests first, or write new tests if none exist for the changed code. If the change touches frontend components, follow `docs/coding-patterns/frontend/accessibility.md` and `docs/coding-patterns/frontend/design-system.md` (semantic color tokens, typography scale, dark mode).
+Make changes in dependency order. Keep TDD: update existing tests first, or write new tests if none exist for the changed code. If the change touches frontend components, follow `docs/coding-patterns/frontend/accessibility.md` and `docs/coding-patterns/frontend/design-system.md` (semantic color tokens, typography scale, dark mode). **All frontend components must include `data-testid` attributes** — never use CSS selectors or text in Playwright tests.
 
 If `backend/prisma/schema.prisma` was modified:
 ```bash
@@ -81,7 +81,7 @@ cd backend && pnpm prisma migrate dev
 Follow [`docs/shared-phases.md`](../../../shared-phases.md) for Validation, Documentation, Code Review, and Commit/PR.
 
 **Small-change-specific notes:**
-- Phase 3: run E2E only if the change touches: controller signatures, API request/response shapes, frontend component behavior, or page routing. Skip E2E if the change is limited to entity fields, validation rules, or business logic covered by unit tests. When in doubt, run E2E — better to validate too much than miss a regression.
+- Phase 3: **run E2E by default.** Skip E2E only if the change is strictly limited to entity fields, validation rules, or business logic fully covered by unit tests with no controller or frontend component changes. If the change touches controller signatures, API request/response shapes, frontend component behavior, or page routing, E2E is mandatory.
 - Phase 4: no plan file is created for small changes — skip plan deletion
 - Phase 5: include "Cascade effects handled" in the review summary
 - Phase 6: commit message format: `feat(<domain>): <description>` (or `fix`/`refactor` as appropriate)

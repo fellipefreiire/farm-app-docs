@@ -111,7 +111,7 @@ Use ARIA only when semantic HTML is insufficient. Most cases are covered by the 
 
 ---
 
-## What NOT to do
+## Anti-patterns
 
 - Never remove focus outlines (`outline: none`) without providing a visible alternative
 - Never use `tabIndex` greater than 0 — it breaks natural tab order

@@ -67,6 +67,8 @@ Score criteria:
 5. Check for orphan skills (exist in the directory but are not referenced by any routing table or other skill)
 6. Verify the model recommendations in skills match the Model Selection table in CLAUDE.md
 
+> **Note:** Agent 3 evaluates all skills including `/evaluate` itself. This is intentional — the evaluate skill should also follow the structural standards it checks in others.
+
 Score criteria:
 - 10: Every track has skills, all skills are well-structured, no orphans
 - 8-9: All tracks covered, minor structural gaps in skill files

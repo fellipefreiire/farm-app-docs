@@ -1,6 +1,6 @@
 # Events Pattern
 
-Domain events decouple state changes from their side effects. The entity emits the event; subscribers react to it in separate modules.
+Domain events are the fire-and-forget mechanism for cross-domain side effects. The entity emits the event; subscribers react to it in separate modules.
 
 > **DomainEvents vs QueryBus:** DomainEvents are fire-and-forget (one-way, no return value) — used for side effects after mutations. QueryBus is request/reply (returns data) — used when a use case needs to read data from another domain. See `query-bus.md` for the full QueryBus pattern.
 

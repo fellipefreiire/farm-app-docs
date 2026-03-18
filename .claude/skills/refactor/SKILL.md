@@ -68,6 +68,8 @@ Common refactor patterns:
 
 ## Validation
 
+> **Note:** The quality thresholds below follow the same standards as Phase 3 in `docs/shared-phases.md`. Refer to that document for the full threshold table and failure handling.
+
 ```bash
 # Backend
 cd backend && pnpm test --coverage
