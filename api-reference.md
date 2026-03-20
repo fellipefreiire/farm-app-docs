@@ -138,7 +138,6 @@ If the project uses WebSockets or Server-Sent Events, document them in a separat
 | GET | /v1/harvests/active | Get active harvest by field | Private |
 | PUT | /v1/harvests/:id | Edit a harvest (name, cropTypeId, varietyId, fieldId, dates) | Private |
 | DELETE | /v1/harvests/:id | Delete a harvest | Private |
-| PATCH | /v1/harvests/:id/activate | Activate a harvest | Private |
 | PATCH | /v1/harvests/:id/complete | Complete a harvest | Private |
 | PATCH | /v1/harvests/:id/cancel | Cancel a harvest | Private |
 | GET | /v1/harvests/:id/audit-logs | List audit logs for a harvest | Private |
@@ -240,12 +239,21 @@ If the project uses WebSockets or Server-Sent Events, document them in a separat
 | PATCH | /v1/schedules/:id/cancel | Cancel a schedule (reverts harvest to UNSCHEDULED) | Private |
 | POST | /v1/schedules/:id/copy | Copy a schedule to another harvest (supports dateMode: offset/absolute, conflictResolution: add/replace) | Private |
 | GET | /v1/schedules/:id/copy-preview | Preview schedule copy mapping without executing (query: targetHarvestId, dateMode) | Private |
-| POST | /v1/schedules/:id/copy-operations | Copy operations from one date to another within a schedule | Private |
-| GET | /v1/schedules/:id/operations | List operations for a schedule (grouped by date, with inputs) | Private |
-| POST | /v1/schedules/:id/operations | Add an operation to a schedule | Private |
-| PUT | /v1/schedules/operations/:id | Edit a schedule operation | Private |
-| DELETE | /v1/schedules/operations/:id | Remove a schedule operation | Private |
-| POST | /v1/schedules/operations/:id/inputs | Add an input to a schedule operation | Private |
-| PUT | /v1/schedules/operation-inputs/:id | Edit a schedule operation input | Private |
-| DELETE | /v1/schedules/operation-inputs/:id | Remove a schedule operation input | Private |
+| POST | /v1/schedules/:id/copy-operations | Copy operations from one date to another within a schedule (body: sourceDate, targetDate, mode) | Private |
 | GET | /v1/schedules/:id/audit-logs | List audit logs for a schedule | Private |
+
+## Field Ticket
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | /v1/field-tickets | Create a new field ticket (DRAFT) with inputs | Private |
+| GET | /v1/field-tickets | List field tickets (paginated, filterable by scheduleId, fieldId, harvestId, date, status, operationType) | Private |
+| GET | /v1/field-tickets/:id | Find field ticket by ID (includes expanded inputs) | Private |
+| PUT | /v1/field-tickets/:id | Edit a field ticket (DRAFT/REVIEWED only, reverts to DRAFT) | Private |
+| DELETE | /v1/field-tickets/:id | Delete a field ticket (DRAFT only, hard delete) | Private |
+| PATCH | /v1/field-tickets/:id/review | Review a field ticket (DRAFT → REVIEWED, sets equipment config) | Private |
+| PATCH | /v1/field-tickets/:id/print | Print field tickets (REVIEWED → PRINTED, batch) | Private |
+| PATCH | /v1/field-tickets/:id/finalize | Finalize a field ticket (PRINTED → COMPLETED, records execution data) | Private |
+| PATCH | /v1/field-tickets/:id/cancel | Cancel a field ticket (any status except COMPLETED → CANCELLED) | Private |
+| PATCH | /v1/field-tickets/:id/re-evaluate | Re-evaluate a completed field ticket (COMPLETED → COMPLETED, audit trail) | Private |
+| GET | /v1/field-tickets/:id/audit-logs | List audit logs for a field ticket | Private |

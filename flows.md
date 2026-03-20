@@ -503,20 +503,23 @@ sequenceDiagram
 
 ## FieldTicket
 
-### Generate field tickets from schedule [MVP]
+### Add operation to schedule [MVP]
 
-**Trigger:** User clicks "Gerar boletas" on a schedule
+**Trigger:** User clicks "+" on a day column in the schedule week view
 **Actor:** Farm owner, Farm manager
 **Domain:** FieldTicket
 
 **Happy path:**
-1. User opens schedule → clicks "Gerar boletas"
-2. System generates field tickets pre-populated with inputs per field per day (from schedule)
-3. Field tickets appear in list with status "draft"
+1. User opens schedule detail → week view is displayed with days of harvest period
+2. User clicks "+" on a specific day column → create field ticket sheet opens
+3. User selects operation type (Pulverização or Fertirrigação) and adds inputs with dosages
+4. User submits → system creates a DRAFT field ticket linked to the schedule, field, harvest, and date
+5. New operation card appears on that day column
 
 **Error cases:**
-- Schedule has no operations → error: "Cronograma sem operações"
-- Field tickets already generated for same period → warning: "Boletas já existentes serão substituídas?"
+- Operation date outside harvest period → error: "Data fora do período da safra"
+- Input not found → error: "Insumo não encontrado"
+- Invalid dosage → error: "Dosagem inválida"
 
 ---
 
