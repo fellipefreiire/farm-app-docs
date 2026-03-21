@@ -12,7 +12,7 @@ Monolithic NestJS backend with a Next.js frontend, connected via REST API. The s
 |--------|---------------|--------|
 | **User** | Authentication, authorization, role-based access, user management | Implemented |
 | **Field** | Field (talhao) registry — area, location, status | Implemented |
-| **Crop** | Crop types, varieties, harvest lifecycle (unscheduled → active → complete/cancel) | Implemented |
+| **Crop** | Crop types, varieties, harvest lifecycle (planned → active → complete/cancel) | Implemented |
 | **Audit** | Full audit trail of every user action (cross-cutting, event-driven) | Implemented |
 | **Schedule** | Lightweight grouping entity per harvest/field. Status is automatic (PLANNED/ACTIVE/UNDER_REVIEW/COMPLETED/CANCELLED). Only 1 ACTIVE per field. Drives Harvest lifecycle. | Implemented |
 | **FieldTicket** | The operation itself — born as DRAFT when added to a schedule. Review → print → execute → finalize workflow. Schedule lists its operations via FieldTickets. | Planned |
@@ -133,13 +133,14 @@ None in MVP. Infrastructure decisions deferred to post-MVP.
 **Rationale:** Option A preserves the bounded context — CropType, Variety, and Harvest share business rules and reference each other. Option B would lose this semantic grouping and make cross-entity relationships implicit. Infrastructure stays flat because NestJS modules are the unit of composition and splitting them per entity adds unnecessary fragmentation.
 **Consequences:** Import paths change from `@/domain/crop/enterprise/entities/crop-type` to `@/domain/crop/crop-types/enterprise/entities/crop-type`. All coding pattern docs updated with subdomain notes. See `coding-patterns/frontend/domain-organization.md` and `coding-patterns/backend/domain-organization.md`.
 
-### 2026-03-16 — Harvest status PLANNED replaced with UNSCHEDULED
+### 2026-03-16 — Harvest status PLANNED replaced with UNSCHEDULED *(superseded by 2026-03-20)*
 
 **Context:** The Schedule domain drives the Harvest lifecycle. A Harvest without a Schedule should reflect that state explicitly.
 **Decision:** Replace Harvest status `PLANNED` with `UNSCHEDULED`. Harvest activation is no longer manual — it's triggered by ScheduleActivatedEvent. When a Schedule is cancelled, Harvest reverts to UNSCHEDULED.
 **Options considered:** (A) Add UNSCHEDULED alongside PLANNED / (B) Replace PLANNED with UNSCHEDULED (chosen)
 **Rationale:** Having both PLANNED and UNSCHEDULED creates ambiguity. UNSCHEDULED clearly communicates "no schedule exists yet". The Schedule domain has its own PLANNED status for "schedule exists but not yet active".
 **Consequences:** Manual ActivateHarvest endpoint removed. Harvest activation only via Schedule domain events. All existing PLANNED data migrated to UNSCHEDULED.
+**Note:** This decision was superseded on 2026-03-20 — UNSCHEDULED was eliminated and PLANNED was restored as the initial Harvest status, since Schedule is now auto-created and always exists.
 
 ### 2026-03-17 — Copy schedule wizard with preview endpoint and conflict resolution
 
@@ -183,6 +184,14 @@ None in MVP. Infrastructure decisions deferred to post-MVP.
 **Options considered:** (A) Remove PLANNED, keep 3 manual states / (B) Simplify to 2 states (OPEN/CLOSED) / (C) Automatic status with review checkpoint (chosen) / (D) Keep as-is
 **Rationale:** Option C matches the real workflow — the user plans operations, they get executed, the system detects completion. The review checkpoint gives the user control at the right moment (when all work is done) instead of burdening them with status buttons throughout. The "resolve PRINTED before cancel" rule prevents data loss. The "choose next schedule" flow during review/cancellation naturally handles the multiple-PLANNED scenario.
 **Consequences:** Remove `ActivateScheduleUseCase`, `CompleteScheduleUseCase`, and their controllers/tests. Add `ReviewScheduleUseCase` (confirms review, transitions to COMPLETED, promotes selected next schedule). Add `OnFieldTicketTerminalCheckSchedule` subscriber (auto-transition to UNDER_REVIEW). Modify `CancelScheduleUseCase` to enforce PRINTED resolution, auto-cancel DRAFT/REVIEWED tickets, and offer next-schedule selection. Modify `CreateScheduleUseCase` to check field for existing ACTIVE schedule. Remove "Ativar" and "Concluir" buttons from frontend. Add review screen with summary, notes, and next-schedule picker. Add PRINTED resolution flow in cancellation dialog. Update `ScheduleStatus` enum in Prisma schema (add UNDER_REVIEW). Migrate existing PLANNED schedules: if field has no ACTIVE schedule, promote the oldest PLANNED to ACTIVE.
+
+### 2026-03-20 — Schedule auto-created with Harvest, UNSCHEDULED status eliminated
+
+**Context:** Schedule is 1:1 with Harvest and always required. Forcing the user to create it separately added friction without value. The `UNSCHEDULED` harvest status only existed to represent "no schedule yet" — unnecessary if every harvest always has a schedule.
+**Decision:** Schedule is auto-created via domain event when a Harvest is created. `HarvestCreatedEvent` triggers `OnHarvestCreatedCreateSchedule` subscriber in the Schedule domain (respects module boundaries). `UNSCHEDULED` harvest status replaced by `PLANNED`. Harvest status now mirrors Schedule: PLANNED → ACTIVE → UNDER_REVIEW → COMPLETED / CANCELLED. `CreateScheduleController` removed (no manual creation). CopySchedule updated: target always has a schedule — if target has PRINTED/COMPLETED tickets, copy is blocked entirely; if only DRAFT/REVIEWED or empty, copy proceeds (add/replace).
+**Options considered:** (A) Auto-create via event + eliminate UNSCHEDULED (chosen) / (B) Keep manual creation / (C) Auto-create but keep UNSCHEDULED for edge cases
+**Rationale:** The farmer's mental model is "I have a harvest, I plan operations" — the schedule is implicit. Removing the creation step reduces friction. Event-based creation respects domain boundaries. UNSCHEDULED has no purpose when every harvest always has a schedule. Edge cases (harvests without operations) are handled by an empty schedule.
+**Consequences:** Prisma migration: HarvestStatus enum drops UNSCHEDULED, adds PLANNED and UNDER_REVIEW. Harvest entity: `activate()` accepts PLANNED, `revertToUnscheduled()` removed, default status PLANNED. New subscriber: `OnHarvestCreatedCreateSchedule`. `CreateScheduleController` and manual endpoint removed. `CreateScheduleUseCase` becomes internal (called by subscriber only). CopySchedule: blocks if target has PRINTED/COMPLETED tickets. Frontend: all UNSCHEDULED references updated to PLANNED, "Criar Cronograma" flow removed. Existing UNSCHEDULED harvests migrated to PLANNED in the migration.
 
 ### 2026-03-09 — Single-tenant MVP with multi-tenant awareness
 

@@ -64,13 +64,13 @@ Manage crop types (cultures), varieties, and harvests (safras) — the agricultu
 | startDate | DateTime | yes | must be a valid date |
 | expectedEndDate | DateTime | yes | must be after startDate |
 | actualEndDate | DateTime | no | set when harvest is completed |
-| status | enum | yes | UNSCHEDULED, ACTIVE, COMPLETED, CANCELLED |
+| status | enum | yes | PLANNED, ACTIVE, UNDER_REVIEW, COMPLETED, CANCELLED |
 | createdAt | DateTime | yes | set on creation |
 | updatedAt | DateTime | yes | set on every update |
 | deletedAt | DateTime | no | set on soft delete |
 
 **Invariants:**
-- A field can only have one active harvest at a time (status UNSCHEDULED or ACTIVE)
+- A field can only have one active harvest at a time (status PLANNED or ACTIVE)
 - expectedEndDate must be after startDate
 - varietyId must belong to the referenced cropTypeId
 - Cannot cancel or complete if there are operations in progress (schedules with active field tickets)
@@ -80,14 +80,18 @@ Manage crop types (cultures), varieties, and harvests (safras) — the agricultu
 **Lifecycle:**
 
 ```
-UNSCHEDULED → ACTIVE (via ScheduleActivatedEvent, not manual)
-UNSCHEDULED → CANCELLED
-ACTIVE → COMPLETED (manual, Schedule must be COMPLETED)
+PLANNED → ACTIVE (via ScheduleActivatedEvent, not manual)
+PLANNED → CANCELLED
+ACTIVE → UNDER_REVIEW (via ScheduleUnderReviewEvent, automatic)
+UNDER_REVIEW → ACTIVE (via ScheduleActivatedEvent, when new FieldTicket added during review)
+UNDER_REVIEW → COMPLETED (via ScheduleCompletedEvent, after review confirmed)
 ACTIVE → CANCELLED
+PLANNED → CANCELLED
 ```
 
-- UNSCHEDULED: harvest created, no schedule yet
+- PLANNED: harvest created, schedule auto-created via HarvestCreatedEvent — awaiting activation
 - ACTIVE: harvest in progress (activated via Schedule domain)
+- UNDER_REVIEW: all FieldTickets reached terminal state — user reviewing before completing
 - COMPLETED: harvest finished (actualEndDate is set)
 - CANCELLED: harvest abandoned (only if no operations in progress)
 
@@ -165,7 +169,7 @@ None — all attributes are primitive types for now.
 - **Trigger:** user action
 - **Input:** cropTypeId, varietyId, fieldId, startDate, expectedEndDate
 - **Rules:** field must not have an active harvest (PLANNED or ACTIVE). Variety must belong to the CropType. expectedEndDate must be after startDate.
-- **Success:** Harvest created with status PLANNED
+- **Success:** Harvest created with status PLANNED. `HarvestCreatedEvent` triggers auto-creation of a linked Schedule via `OnHarvestCreatedCreateSchedule` subscriber.
 - **Errors:** FieldAlreadyHasActiveHarvestError, VarietyDoesNotBelongToCropTypeError, InvalidDateRangeError
 - **Events emitted:** HarvestCreatedEvent
 
@@ -180,9 +184,9 @@ None — all attributes are primitive types for now.
 ### ActivateHarvest
 - **Trigger:** ScheduleActivatedEvent (not manual — no HTTP endpoint)
 - **Input:** harvestId, actorId (from event)
-- **Rules:** status must be UNSCHEDULED.
+- **Rules:** status must be PLANNED.
 - **Success:** Harvest status → ACTIVE
-- **Errors:** HarvestNotFoundError, HarvestNotUnscheduledError
+- **Errors:** HarvestNotFoundError, HarvestNotPlannedError
 - **Events emitted:** HarvestActivatedEvent
 
 ### CompleteHarvest
@@ -212,7 +216,7 @@ None — all attributes are primitive types for now.
 ### GetActiveHarvestByField
 - **Trigger:** other domains querying (Schedule needs this)
 - **Input:** fieldId
-- **Rules:** return harvest with status PLANNED or ACTIVE for the given field
+- **Rules:** return harvest with status PLANNED or ACTIVE for the given field (PLANNED here refers to the Harvest status, not to be confused with Schedule status PLANNED)
 - **Success:** Harvest or null
 - **Errors:** none
 - **Events emitted:** none
@@ -255,7 +259,7 @@ None — all attributes are primitive types for now.
 
 - CropType name: unique, accent-insensitive (normalize with Unicode NFD + strip diacritics for comparison)
 - Variety name: unique per CropType, accent-insensitive
-- One active harvest per field (status UNSCHEDULED or ACTIVE)
+- One active harvest per field (status PLANNED or ACTIVE)
 - Variety must belong to the referenced CropType
 - All operations audited
 - Soft delete preserves data for audit trail and future reports
@@ -264,7 +268,7 @@ None — all attributes are primitive types for now.
 ## Edge Cases
 
 - User submits "Vitoria" when "Vitória" exists → reject with error suggesting "Vitória"
-- User tries to create harvest on a field that already has an UNSCHEDULED harvest → reject
+- User tries to create harvest on a field that already has a PLANNED harvest → reject
 - User tries to cancel active harvest with field tickets in progress → reject
 - User deletes CropType that has only soft-deleted varieties → allowed (hard delete)
 - User deletes CropType that has active varieties → soft delete CropType
@@ -272,6 +276,6 @@ None — all attributes are primitive types for now.
 
 ## Resolved Questions
 
-- **UNSCHEDULED → ACTIVE transition:** Automatic — driven by ScheduleActivatedEvent when a Schedule is activated. No manual activation endpoint.
+- **PLANNED → ACTIVE transition:** Automatic — driven by ScheduleActivatedEvent when a Schedule is activated. No manual activation endpoint.
 - **Harvest cancellation cascading:** Yes — cancelling a harvest automatically cancels its schedules via domain event (HarvestCancelledEvent). All records are preserved (soft delete) for audit trail and reports.
-- **Schedule cancelled → Harvest reverts:** When a Schedule is cancelled, the Harvest reverts to UNSCHEDULED, allowing a new Schedule to be created.
+- **Schedule cancelled → Harvest reverts:** When a Schedule is cancelled, the Harvest is cancelled as well. A new Harvest (and its auto-created Schedule) must be created if operations need to continue on the field.

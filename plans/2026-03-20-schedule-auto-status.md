@@ -386,7 +386,7 @@ Expected: 2 new tests FAIL.
 
 - [ ] **Step 3: Implement changes in CreateScheduleUseCase**
 
-After validating harvest exists and is UNSCHEDULED:
+After validating harvest exists and is PLANNED:
 1. Get harvest's `fieldId` from the `FindHarvestQuery` result (already fetched)
 2. Query `FindActiveScheduleByFieldIdQuery` with `fieldId`
 3. If no active schedule → call `Schedule.create(props, actorId)` then `schedule.activate(actorId)` → born ACTIVE
@@ -703,7 +703,7 @@ Read `backend/src/domain/crop/harvests/enterprise/entities/harvest.ts`. Check if
 
 - [ ] **Step 3: Update on-schedule-cancelled.ts**
 
-Change from `harvest.revertToUnscheduled()` to `harvest.cancel()` — per the new rules, cancelled schedule → Harvest CANCELLED (not UNSCHEDULED).
+Change from `harvest.revertToPlanned()` to `harvest.cancel()` — per the new rules, cancelled schedule → Harvest CANCELLED (not PLANNED).
 
 - [ ] **Step 4: Create on-schedule-completed subscriber**
 

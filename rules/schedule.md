@@ -31,7 +31,7 @@ Lightweight grouping entity that represents the operation plan for a harvest on 
 
 **Invariants:**
 - One Schedule per Harvest (1:1 relationship)
-- Harvest must exist and have status UNSCHEDULED to create a Schedule
+- Harvest must exist and have status PLANNED to create a Schedule
 - **Max 1 ACTIVE schedule per field at a time** — if a field already has an ACTIVE schedule, new schedules are created as PLANNED
 - Schedule period is inherited from Harvest (startDate, expectedEndDate) — no separate dates
 - Status transitions are automatic, except cancellation (explicit user action)
@@ -66,25 +66,25 @@ Schedule does NOT own operations directly. Operations are FieldTickets linked by
 ## Use Cases
 
 ### CreateSchedule
-- **Trigger:** user action
+- **Trigger:** `HarvestCreatedEvent` (auto-created via domain event — no HTTP endpoint, no user action)
 - **Input:** harvestId
-- **Rules:** Harvest must exist with status UNSCHEDULED. One Schedule per Harvest (1:1). Check field for existing ACTIVE schedule to determine initial status.
+- **Rules:** Harvest must exist with status PLANNED. One Schedule per Harvest (1:1). Check field for existing ACTIVE schedule to determine initial status.
 - **Success:** Schedule created with status ACTIVE (if field has no active schedule) or PLANNED (if field already has active schedule). If ACTIVE, linked Harvest → ACTIVE.
-- **Errors:** HarvestNotFoundError, HarvestNotUnscheduledError, ScheduleAlreadyExistsForHarvestError
+- **Errors:** HarvestNotFoundError, HarvestNotPlannedError, ScheduleAlreadyExistsForHarvestError
 - **Events emitted:** ScheduleCreatedEvent. If born ACTIVE: ScheduleActivatedEvent (→ Harvest ACTIVE).
 
 ### EditSchedule
 - **Trigger:** user action
-- **Input:** scheduleId, harvestId (optional — allows re-linking to a different UNSCHEDULED harvest)
-- **Rules:** Schedule must exist. If changing harvestId, new Harvest must be UNSCHEDULED. Cannot edit if COMPLETED, CANCELLED, or UNDER_REVIEW.
+- **Input:** scheduleId, harvestId (optional — allows re-linking to a different PLANNED harvest)
+- **Rules:** Schedule must exist. If changing harvestId, new Harvest must be PLANNED. Cannot edit if COMPLETED, CANCELLED, or UNDER_REVIEW.
 - **Success:** Schedule updated
-- **Errors:** ScheduleNotFoundError, HarvestNotFoundError, HarvestNotUnscheduledError, ScheduleNotEditableError
+- **Errors:** ScheduleNotFoundError, HarvestNotFoundError, HarvestNotPlannedError, ScheduleNotEditableError
 - **Events emitted:** ScheduleUpdatedEvent
 
 ### DeleteSchedule
 - **Trigger:** user action
 - **Input:** scheduleId
-- **Rules:** If no FieldTickets exist, or FieldTickets exist but none are printed/completed → hard delete (FieldTickets in DRAFT/REVIEWED are cascade deleted). If FieldTickets are printed or completed → soft delete. When hard deleted, Harvest reverts to UNSCHEDULED.
+- **Rules:** If no FieldTickets exist, or FieldTickets exist but none are printed/completed → hard delete (FieldTickets in DRAFT/REVIEWED are cascade deleted). If FieldTickets are printed or completed → soft delete. When hard deleted, Harvest reverts to PLANNED.
 - **Success:** Schedule deleted (hard or soft)
 - **Errors:** ScheduleNotFoundError
 - **Events emitted:** ScheduleDeletedEvent
@@ -135,9 +135,9 @@ Schedule does NOT own operations directly. Operations are FieldTickets linked by
 ### CopySchedule
 - **Trigger:** user action (copy entire schedule to create a new one for a different harvest)
 - **Input:** sourceScheduleId, targetHarvestId
-- **Rules:** Source Schedule must exist (any status — including CANCELLED). Target Harvest must exist with status UNSCHEDULED. Copies ALL operations as DRAFT regardless of their original status.
+- **Rules:** Source Schedule must exist (any status — including CANCELLED). Target Harvest must exist with status PLANNED. Copies ALL operations as DRAFT regardless of their original status.
 - **Success:** New Schedule created + DRAFT FieldTickets created with copied data
-- **Errors:** ScheduleNotFoundError, HarvestNotFoundError, HarvestNotUnscheduledError, ScheduleAlreadyExistsForHarvestError
+- **Errors:** ScheduleNotFoundError, HarvestNotFoundError, HarvestNotPlannedError, ScheduleAlreadyExistsForHarvestError
 - **Events emitted:** ScheduleCreatedEvent, FieldTicketCreatedEvent (per copied ticket)
 
 ---
@@ -165,7 +165,7 @@ Schedule does NOT own operations directly. Operations are FieldTickets linked by
 
 | Use Case | Owner | Manager |
 |----------|-------|---------|
-| CreateSchedule | yes | yes |
+| CreateSchedule | internal (event-driven) | internal (event-driven) |
 | EditSchedule | yes | yes |
 | DeleteSchedule | yes | no |
 | ReviewSchedule | yes | no |
@@ -198,20 +198,21 @@ Schedule does NOT own operations directly. Operations are FieldTickets linked by
 - User reviews schedule with no PLANNED available → COMPLETED, no promotion, option to create new
 - User copies a CANCELLED schedule → all operations (including originally COMPLETED ones) copied as DRAFT
 - Concurrent Schedule creation for same Harvest → database unique constraint prevents duplicates
+- Schedule is always created automatically when a Harvest is created — there is no manual "create schedule" action for users
 
 ## Harvest Domain Changes Required
 
 1. **Harvest lifecycle driven by Schedule:**
    ```
-   UNSCHEDULED → ACTIVE (via ScheduleActivatedEvent)
+   PLANNED → ACTIVE (via ScheduleActivatedEvent)
    ACTIVE → COMPLETED (via ScheduleCompletedEvent)
    ACTIVE → CANCELLED (via ScheduleCancelledEvent)
-   UNSCHEDULED → CANCELLED (manual, if harvest is abandoned before scheduling)
+   PLANNED → CANCELLED (manual, if harvest is abandoned before scheduling)
    ```
 2. **Remove manual `ActivateHarvest` use case** — activation is driven by Schedule domain
 3. **Add/update event subscribers** for ScheduleActivatedEvent, ScheduleCompletedEvent, ScheduleCancelledEvent
 4. **`CompleteHarvest` driven by Schedule** — Harvest completes when Schedule completes (after review), not manually
-5. **Initial status on creation** — Harvest is created with status `UNSCHEDULED` (no schedule yet)
+5. **Initial status on creation** — Harvest is created with status `PLANNED` (schedule is auto-created via HarvestCreatedEvent)
 
 ## Open Questions
 

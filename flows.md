@@ -258,7 +258,7 @@ sequenceDiagram
 
 **Listing:**
 1. User navigates to "Colheitas" → paginated table with columns: Nome, Status (badge), Tipo de Cultura, Variedade, Talhão, Data de Início, Previsão de Término
-2. Tabs filter by status: Todos, Planejadas, Ativas, Concluídas, Canceladas
+2. Tabs filter by status: Todos, Planejadas, Ativas, Em Revisão, Concluídas, Canceladas
 3. Search input filters by nome (debounced, server-side)
 4. Filters popover allows filtering by Tipo de Cultura, Variedade (dependent on crop type), Talhão — active filters shown as removable tags below the search bar
 
@@ -279,12 +279,11 @@ sequenceDiagram
 - Main: Auditoria (last 5 logs with diff modal)
 
 **Activate:**
-1. User clicks "Iniciar" on a planned harvest
-2. System changes status to `ACTIVE` → only one active harvest per field allowed → audit log records activation
+- Activation is automatic — driven by the Schedule domain when a schedule for this harvest becomes ACTIVE (via `ScheduleActivatedEvent`). There is no manual "Iniciar" button for harvests.
+- A linked Schedule is also auto-created when the Harvest is created (via `HarvestCreatedEvent` → `OnHarvestCreatedCreateSchedule` subscriber).
 
 **Complete:**
-1. User clicks "Finalizar" on an active harvest
-2. System changes status to `COMPLETED` → audit log records completion
+- Completion is automatic — driven by the Schedule domain when the review is confirmed (via `ScheduleCompletedEvent`). There is no manual "Finalizar" button for harvests.
 
 **Cancel:**
 1. User clicks "Cancelar" on a planned or active harvest
@@ -377,25 +376,27 @@ sequenceDiagram
 
 ## Schedule
 
-### Create schedule [MVP]
+### Schedule auto-created with Harvest [MVP]
 
-**Trigger:** User clicks "Novo cronograma" on the schedules page
-**Actor:** Farm owner, Farm manager
-**Domain:** Schedule
+**Trigger:** User creates a Harvest — Schedule is auto-created via `HarvestCreatedEvent`
+**Actor:** Farm owner, Farm manager (indirect — triggered by harvest creation)
+**Domain:** Schedule (via `OnHarvestCreatedCreateSchedule` subscriber)
 
 **Happy path:**
-1. User clicks "Novo cronograma" → form opens
-2. User selects: field, crop, variety, time period (start/end dates) → submits
-3. System creates schedule → redirects to schedule detail page
-4. User adds operations day by day:
+1. User creates a Harvest (see Harvest lifecycle above)
+2. System emits `HarvestCreatedEvent` → `OnHarvestCreatedCreateSchedule` subscriber fires automatically
+3. Schedule is created with status PLANNED or ACTIVE:
+   - ACTIVE if the field has no other ACTIVE schedule
+   - PLANNED if the field already has an ACTIVE schedule
+4. User navigates to the schedule → adds operations day by day:
    - Selects operation type (spraying, fertigation, etc.)
    - Selects day in the schedule
    - Assigns inputs from inventory (product, dosage)
 5. User repeats step 4 until schedule is complete
 
+**Note:** There is no manual "Novo cronograma" button — schedules are always auto-created with their harvest.
+
 **Error cases:**
-- Field not found → select only shows existing fields
-- Overlapping schedule for same field/period → error: "Já existe cronograma para este talhão neste período"
 - Input not in inventory → select only shows existing inventory items
 
 ---
@@ -426,7 +427,7 @@ sequenceDiagram
 
 **Step 1 — Destino:**
 1. Wizard opens with two tabs: "Safra existente" and "Nova safra"
-2. **Existing harvest tab:** User selects any harvest via async search (not limited to UNSCHEDULED). Info badge shows harvest status.
+2. **Existing harvest tab:** User selects any harvest via async search (not limited to PLANNED). Info badge shows harvest status.
 3. **New harvest tab:** User fills inline form (name, crop type, variety, field, dates). Harvest is created via `POST /v1/harvests` when advancing.
 4. If creation fails → stays on Step 1 with validation errors.
 

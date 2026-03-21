@@ -437,7 +437,7 @@ describe('Use Case with QueryBus', () => {
     // Register default response for cross-domain query
     queryBus.register('FindHarvestQuery', {
       id: 'harvest-1',
-      status: 'UNSCHEDULED',
+      status: 'PLANNED',
       startDate: new Date('2026-01-01'),
       expectedEndDate: new Date('2026-06-30'),
     })

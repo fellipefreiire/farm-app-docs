@@ -309,7 +309,7 @@ describe('My Use Case', () => {
     // Register static response for the query
     queryBus.register('FindHarvestQuery', {
       id: 'harvest-1',
-      status: 'UNSCHEDULED',
+      status: 'PLANNED',
       startDate: new Date('2026-01-01'),
       expectedEndDate: new Date('2026-06-30'),
     })
@@ -347,7 +347,7 @@ beforeEach(() => {
 
 // In test:
 harvestsMap.set('harvest-1', { id: 'harvest-1', status: 'ACTIVE', ... })
-harvestsMap.set('harvest-2', { id: 'harvest-2', status: 'UNSCHEDULED', ... })
+harvestsMap.set('harvest-2', { id: 'harvest-2', status: 'PLANNED', ... })
 ```
 
 ---
