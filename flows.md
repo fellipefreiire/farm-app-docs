@@ -459,6 +459,61 @@ sequenceDiagram
 
 ---
 
+### Review completed schedule [MVP]
+
+**Trigger:** System auto-transitions schedule to UNDER_REVIEW when all field tickets are terminal (COMPLETED/CANCELLED)
+**Actor:** Farm owner
+**Domain:** Schedule
+
+**Happy path:**
+1. All field tickets in the schedule reach terminal state (COMPLETED or CANCELLED)
+2. System automatically transitions schedule to UNDER_REVIEW status
+3. User sees "Em Revisão" badge on the schedule and a "Revisar Cronograma" button
+4. User clicks "Revisar" → review dialog opens showing:
+   - Summary of completed vs cancelled tickets
+   - Optional notes/observations textarea
+5. User fills notes (optional) → clicks "Confirmar Revisão"
+6. System shows PLANNED schedules for the same field (if any) → user selects which to activate next
+7. If no PLANNED schedules → option to create new or just close
+8. Schedule → COMPLETED, Harvest → COMPLETED
+9. Selected next schedule → ACTIVE, its Harvest → ACTIVE
+
+**Error cases:**
+- No field tickets in schedule → schedule never reaches UNDER_REVIEW (stays ACTIVE until cancelled)
+- User adds new field ticket during review → schedule reverts to ACTIVE automatically
+
+---
+
+### Cancel schedule with PRINTED resolution [MVP]
+
+**Trigger:** User clicks "Cancelar" on a PLANNED or ACTIVE schedule
+**Actor:** Farm owner
+**Domain:** Schedule
+
+**Happy path:**
+1. User clicks "Cancelar" on a schedule
+2. If schedule has PRINTED tickets → system shows resolution dialog:
+   - Lists each PRINTED ticket
+   - For each: "Finalizar" (was executed) or "Cancelar" (was not)
+   - User resolves all PRINTED tickets before proceeding
+3. System shows confirmation dialog:
+   - Alert: "Ao cancelar, todas as boletas não executadas serão canceladas. Boletas concluídas serão mantidas como histórico."
+   - Mandatory reason field
+4. User confirms → system:
+   - Auto-cancels all DRAFT/REVIEWED tickets
+   - Preserves COMPLETED tickets as historical record
+   - Schedule → CANCELLED, Harvest → CANCELLED
+5. System shows post-cancellation options:
+   - "Ativar cronograma planejado" (if PLANNED schedules exist for the field)
+   - "Criar novo baseado neste" (copies all operations as DRAFT)
+   - "Fechar"
+
+**Error cases:**
+- PRINTED tickets not resolved → cancel button disabled until all resolved
+- Reason not provided → validation error
+
+---
+
 ## Fleet
 
 ### Manage vehicles [MVP]

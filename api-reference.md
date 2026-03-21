@@ -234,9 +234,8 @@ If the project uses WebSockets or Server-Sent Events, document them in a separat
 | GET | /v1/schedules/:id | Find schedule by ID | Private |
 | PUT | /v1/schedules/:id | Edit a schedule | Private |
 | DELETE | /v1/schedules/:id | Delete a schedule | Private |
-| PATCH | /v1/schedules/:id/activate | Activate a schedule (triggers harvest activation) | Private |
-| PATCH | /v1/schedules/:id/complete | Complete a schedule | Private |
-| PATCH | /v1/schedules/:id/cancel | Cancel a schedule (reverts harvest to UNSCHEDULED) | Private |
+| PATCH | /v1/schedules/:id/review | Review and complete a schedule (UNDER_REVIEW → COMPLETED, optional nextScheduleId to promote) | Private |
+| PATCH | /v1/schedules/:id/cancel | Cancel a schedule (requires PRINTED tickets resolved first, auto-cancels DRAFT/REVIEWED) | Private |
 | POST | /v1/schedules/:id/copy | Copy a schedule to another harvest (supports dateMode: offset/absolute, conflictResolution: add/replace) | Private |
 | GET | /v1/schedules/:id/copy-preview | Preview schedule copy mapping without executing (query: targetHarvestId, dateMode) | Private |
 | POST | /v1/schedules/:id/copy-operations | Copy operations from one date to another within a schedule (body: sourceDate, targetDate, mode) | Private |
