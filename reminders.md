@@ -14,7 +14,7 @@ Living notes for gotchas, pitfalls, and things that went wrong during developmen
 
 ## Health check
 
-health-check-counter: 1
+health-check-counter: 2
 
 The `health-check-counter` tracks how many features have been merged since the last `/health-check`. It is incremented by `/feature`, `/new-domain`, and `/small-change` after a PR is successfully created. When it reaches `HEALTH_CHECK_THRESHOLD` (defined in CLAUDE.md), Claude warns before starting the next task. It resets to 0 after `/health-check` completes.
 
