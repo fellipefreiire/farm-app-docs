@@ -45,21 +45,6 @@ Evaluate:
 
 ---
 
-## Branch
-
-```bash
-# Fullstack domain (typical case)
-cd backend && git checkout development && git pull && git checkout -b FS-{issue-number}/{domain-name}
-cd frontend && git checkout development && git pull && git checkout -b FS-{issue-number}/{domain-name}
-
-# Backend only
-cd backend && git checkout development && git pull && git checkout -b BE-{issue-number}/{domain-name}
-```
-
-**If branch creation fails:** check the error — if the branch already exists (`git checkout` to it), if the working tree is dirty (`git stash` or ask the user). Do not proceed to Phase 1 without a clean branch.
-
----
-
 ## Phase 1 — Planning
 
 Launch an `Explore` agent (Haiku) to:
@@ -141,22 +126,25 @@ Follow `docs/coding-patterns/frontend/design-system.md` for all frontend work �
 
 ---
 
-## Phases 3-6
+## Phases 3-5
 
 Follow [`docs/shared-phases.md`](../../../shared-phases.md) for Validation, Documentation, Code Review, and Commit/PR.
 
 **New-domain-specific notes:**
 - Phase 4: update `docs/architecture.md` with the new domain and Mermaid diagram. Delete `docs/plans/YYYY-MM-DD-<domain-name>.md`
-- Phase 6: commit message format: `feat(<domain>): add <domain> domain`
-- Phase 6: new domains are always fullstack — create backend PR first (`Refs DOCS_REPO#<issue-number>`), then frontend PR (`Closes DOCS_REPO#<issue-number>`). Merge order: backend first, then frontend.
-
-**Increment `health-check-counter` in `docs/reminders.md`** only after PR(s) are successfully created. If PR creation fails, do not increment — fix the issue and retry the PR first.
-```
-health-check-counter: N+1
-```
 
 ---
 
 ## Completion
 
-After PR(s) are created and `health-check-counter` is incremented, the new-domain skill is complete. Confirm the PR URL(s) with the user.
+After Phase 5 approval:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⏸ HANDOFF — /new-domain complete
+Completed: domain implemented, reviewed and approved
+Next step: run /commit when you are ready to commit and push
+Waiting for: explicit /commit invocation — do not proceed automatically
+DO NOT continue past this point.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```

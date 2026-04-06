@@ -26,17 +26,6 @@ Diagnoses and fixes a bug in any layer. The fix must be proven by a test — eit
 
 ---
 
-## Branch
-
-```bash
-cd backend && git checkout development && git pull && git checkout -b BE-{issue-number}/fix-{description}
-# or frontend / fullstack as needed
-```
-
-**If branch creation fails:** check the error — if the branch already exists (`git checkout` to it), if the working tree is dirty (`git stash` or ask the user). Do not proceed to Fix without a clean branch.
-
----
-
 ## Fix
 
 **Write the failing test first** (if none exists):
@@ -124,55 +113,19 @@ Present to the user:
 
 ---
 
-## Commit and Pull Request
-
-```bash
-git add <specific files>
-git commit -m "fix(<domain>): <description>"
-```
-
-```bash
-gh issue comment <issue-number> --repo DOCS_REPO --body "Fixed. Root cause: <description>"
-gh issue close <issue-number> --repo DOCS_REPO
-```
-
-```bash
-git push -u origin <branch-name>
-gh pr create \
-  --title "fix(<domain>): <description>" \
-  --body "..." \
-  --base PR_TARGET_BRANCH \
-  --repo BACKEND_REPO  # or FRONTEND_REPO
-```
-
-PR body template:
-```markdown
-## Summary
-<root cause and what was fixed>
-
-## Changes
-- <file or module>: <what changed>
-
-## Test evidence
-- Bug test: passing
-- Full suite: X/X passing, coverage X%
-- No regressions
-
-## Related
-Closes DOCS_REPO#<issue-number>
-
-## Checklist
-- [ ] All tests passing
-- [ ] No type errors (tsc --noEmit)
-- [ ] No console.log in production code
-- [ ] Target branch is PR_TARGET_BRANCH, never PRODUCTION_BRANCH
-```
-
----
-
 ## Completion
 
-After PR is created:
-1. Confirm the PR URL with the user
-2. Add the gotcha to `docs/reminders.md` if the bug was caused by a non-obvious pattern that could recur
-3. Bug fixes do **not** increment the `health-check-counter`
+After Code Review approval:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⏸ HANDOFF — /bugfix complete
+Completed: bug diagnosed, fixed, validated, and approved
+Next step: run /commit when you are ready to commit and push
+Waiting for: explicit /commit invocation — do not proceed automatically
+DO NOT continue past this point.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+Note: If a gotcha was discovered, add it to `docs/reminders.md` before emitting the HANDOFF block.
+Bug fixes do **not** increment the `health-check-counter`.

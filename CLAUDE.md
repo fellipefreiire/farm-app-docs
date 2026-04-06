@@ -11,6 +11,7 @@ FRONTEND_REPO          = fellipefreiire/farm-app-frontend
 PR_TARGET_BRANCH       = development                        ← all PRs target this branch
 PRODUCTION_BRANCH      = main                               ← triggers CI/CD, never target of PRs
 HEALTH_CHECK_THRESHOLD = 5                                  ← run /health-check every N features merged
+USE_GITHUB_ISSUES      = true                               ← true: create issues and link PRs | false: skip all GitHub issue management
 PACKAGE_MANAGER        = pnpm                               ← pnpm | npm | yarn | bun
 SETTINGS_FILE          = .claude/settings.json               ← symlink to docs/.claude/settings.json
 ```
@@ -21,6 +22,37 @@ SETTINGS_FILE          = .claude/settings.json               ← symlink to docs
 - **Local overrides:** `.claude/settings.local.json` is auto-created by Claude Code when permissions are approved at runtime. It is gitignored and takes precedence over `settings.json`. Do not check it into version control.
 - **Bash commands:** All commands must match allowed patterns in the settings file. If a compound command mixes allowed and denied prefixes (e.g., `rm -rf ... ; pnpm ...`), split into separate tool calls. Run independent calls in parallel.
 - **No direct changes to `development` or `main`:** Every change, no matter how small, must go through a feature branch with an issue and PR. See Branch Strategy below.
+
+## Workflow Modes
+
+This project uses two complementary models. Each session should be scoped to one phase only — never plan and implement in the same session.
+
+### Opus — Orchestrator (`cc`)
+Runs via the Anthropic API. Responsible for all reasoning, planning, and validation. **Never writes implementation code.**
+
+| Skill | Purpose |
+|-------|---------|
+| `/write-plan` | Refine requirements, read coding patterns, write enriched implementation spec |
+| `/validate` | Run tests, analyze results, list problems — never fixes code directly |
+| `/commit` | Update docs, run final tests, commit, push, open PR |
+| `/domain-discovery` | Define domain rules interactively |
+| `/architecture-discussion` | Architectural analysis and decision-making |
+| `/bugfix` | Diagnose root cause, instruct local model on the fix |
+| `/refactor` | Define scope, validate result |
+| `/health-check` | Full project audit |
+| `/code-audit` `/compliance-check` `/evaluate` | Analysis and reporting |
+
+### Local Model — Implementor (`ccl`)
+Runs via Ollama locally. Reads the plan written by Opus and writes code. **Never makes architectural decisions.**
+
+| Skill | Purpose |
+|-------|---------|
+| `/implement` | Read plan from `docs/plans/`, implement following the spec exactly |
+
+**If the plan has any gap, ambiguity, or conflict with a coding pattern:** the local model stops immediately, reports the issue in the plan file, and waits. It never decides on its own.
+
+### Handoff protocol
+Each skill ends with a `⏸ HANDOFF` block. This marks the end of the session — close the terminal and open a new session in the other model. Never continue past a HANDOFF in the same session.
 
 ## Workspace Structure
 
@@ -409,8 +441,8 @@ If still ambiguous after applying the rule → ask the user to clarify before pr
 | Track | Skill | `docs/rules/<domain>.md` missing |
 |-------|-------|----------------------------------|
 | Knowledge | `/domain-discovery` `/flow-discovery` `/architecture-discussion` | Create as output |
-| New Domain | `/new-domain` | Block — ask user to confirm running `/domain-discovery` first. Also suggest `/health-check` before starting — new domains have large architectural impact. |
-| Feature | `/feature` | Block — ask user to confirm running `/domain-discovery` first. |
+| New Domain | `/new-domain` or `/write-plan` | Block — ask user to confirm running `/domain-discovery` first. Also suggest `/health-check` before starting — new domains have large architectural impact. |
+| Feature | `/feature` or `/write-plan` | Block — ask user to confirm running `/domain-discovery` first. |
 | Small Change | `/small-change` | Warn — continue |
 | Bug Fix | `/bugfix` | Skip |
 | Refactor | `/refactor` | Skip |
@@ -418,6 +450,8 @@ If still ambiguous after applying the rule → ask the user to clarify before pr
 | Evaluate | `/evaluate` | Skip |
 | Quality | `/compliance-check` `/code-audit` `/health-check` | Warn — note gap in report |
 | Project Setup | `/project-setup` | N/A — triggered automatically by Step 0 |
+
+> **Note:** `/feature`, `/new-domain`, and `/small-change` are Opus-only skills that cover Phase 0 (refinement) and Phase 1 (planning). Use `/write-plan` when you want Opus to plan and the local model to implement. Use the individual skills when Opus handles the full cycle.
 
 **When blocking for missing domain rules**, inform the user and ask for confirmation before proceeding:
 > "The `<domain>` domain doesn't have documented rules in `docs/rules/<domain>.md` yet. I need to run `/domain-discovery` before proceeding. Should I start now?"

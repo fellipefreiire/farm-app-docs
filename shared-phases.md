@@ -6,8 +6,7 @@ These phases are used by all implementation skills (New Domain, Feature, Small C
 
 - **After Phase 2 (Implementation):** Every implementation skill (`/feature`, `/new-domain`, `/small-change`) references this file for Phases 3-6.
 - **Phase 3 gates Phase 4:** Never advance if quality thresholds are not met.
-- **Phase 5 gates Phase 6:** Never commit without explicit user approval.
-- **Phase 6 ends the skill:** After PR creation, the skill is complete.
+- **Phase 5 ends the skill:** After user approval, emit the HANDOFF block. Never commit from this skill.
 
 ---
 
@@ -145,119 +144,20 @@ Launch an `Explore` agent to verify the implementation against `docs/coding-patt
 
 When pushing back on feedback: use technical reasoning and evidence. Never use social language — acknowledge through action or explain with facts.
 
-**Wait for explicit user approval before moving to Phase 6.**
+**Wait for explicit user approval before emitting the HANDOFF block.**
 
 ---
 
-## Phase 6 — Commit and Pull Request
+## ⏸ Handoff
 
-**Run fresh tests before committing — never rely on previous runs:**
-```bash
-cd backend && pnpm test && pnpm test:e2e
-cd frontend && pnpm build && pnpm test:e2e    # includes Playwright with MSW on E2E port (DEV_PORT + 1)
+After explicit user approval:
+
 ```
-
-**Before running `pnpm test:e2e` (Playwright):** ensure no stale lock file exists (`rm -f frontend/.next/dev/lock`) and E2E port (DEV_PORT + 1) is free. See `docs/coding-patterns/frontend/e2e-test.md` for troubleshooting.
-
-If anything fails → back to Phase 3.
-
-**Port check — verify no custom dev ports leaked into tracked files:**
-
-Dev environment uses custom ports to avoid conflicts (configured in `.env` files, which are gitignored). Before committing, verify that tracked files still have the original default ports:
-
-| File | Check | Original values | Custom dev values (must NOT appear) |
-|------|-------|-----------------|-------------------------------------|
-| `backend/docker-compose.yml` | Port defaults in `${VAR:-default}` syntax | `5432` (PostgreSQL), `6379` (Redis) | `5433`, `6381` |
-| `backend/.env.example` | Port values | `PORT=3333`, `DATABASE_URL` with `:5432`, `REDIS_PORT=6379` | `4333`, `5433`, `6381` |
-| `frontend/.env.example` | API URL | `http://localhost:3333` | `http://localhost:4333` |
-
-If any tracked file contains custom dev ports (4333, 5433, 6381), revert those values to the originals before committing. The `.env` files themselves are gitignored and safe to leave with custom ports.
-
-**Commit:**
-```bash
-git add <specific files>   # never git add -A
-git commit -m "feat(domain): description"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⏸ HANDOFF — implementation complete
+Completed: code reviewed and approved by user
+Next step: run /commit when you are ready to commit and push
+Waiting for: explicit /commit invocation — do not proceed automatically
+DO NOT continue past this point.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
-
-**Push and create PR:**
-
-For backend-only or frontend-only features:
-```bash
-git push -u origin <branch-name>
-
-gh pr create \
-  --title "feat(domain): description" \
-  --body "..." \
-  --base PR_TARGET_BRANCH
-```
-
-For fullstack features (two PRs, one Issue):
-```bash
-# 1. Backend PR first — references the issue without closing it
-cd backend && git push -u origin <branch-name>
-gh pr create --repo BACKEND_REPO \
-  --title "feat(domain): description [backend]" \
-  --body "..." \
-  --base PR_TARGET_BRANCH
-# Use "Refs DOCS_REPO#<issue-number>" in body — does NOT close the issue yet
-
-# 2. Frontend PR second — closes the issue when merged
-cd frontend && git push -u origin <branch-name>
-gh pr create --repo FRONTEND_REPO \
-  --title "feat(domain): description [frontend]" \
-  --body "..." \
-  --base PR_TARGET_BRANCH
-# Use "Closes DOCS_REPO#<issue-number>" in body — closes the issue on merge
-```
-
-**Fullstack merge order: backend first, then frontend.**
-If backend PR has issues after frontend is approved → frontend waits. Never merge frontend before backend is stable. If backend PR is rejected or requires significant changes, do not merge frontend — keep the frontend PR open until backend is fixed and merged. If the issue was already closed by a premature frontend merge, reopen it.
-
-**Cross-repo issue closing:** GitHub does not automatically close issues across repositories — `Closes org/docs-repo#N` in a PR body only works within the same repo. After the user confirms all PRs are merged, close the issue manually:
-```bash
-gh issue comment <issue-number> --repo DOCS_REPO --body "Implemented. Backend: BACKEND_REPO#<pr>, Frontend: FRONTEND_REPO#<pr>"
-gh issue close <issue-number> --repo DOCS_REPO
-```
-
-**Sync local branches after merge:** After the issue is closed, switch back to `development`, pull the merged changes, and delete the feature branch (local + remote) so the next task starts from a clean, up-to-date state:
-```bash
-# For fullstack features
-cd backend && git checkout development && git pull && git branch -d <branch-name> && git push origin --delete <branch-name>
-cd frontend && git checkout development && git pull && git branch -d <branch-name> && git push origin --delete <branch-name>
-
-# For single-repo features, only the affected repo
-cd <repo> && git checkout development && git pull && git branch -d <branch-name> && git push origin --delete <branch-name>
-```
-
-PR body template:
-```markdown
-## Summary
-<what was built and why>
-
-## Changes
-- <file or module>: <what changed>
-
-## Test evidence
-- Unit tests: X/X passing, coverage X%
-- E2E (API): X/X passing
-- Playwright: X/X passing
-- Mutation score: X%
-
-## Related
-Refs DOCS_REPO#<issue-number>      ← use in backend PR (does not close issue)
-Closes DOCS_REPO#<issue-number>    ← use in frontend PR (closes issue on merge)
-<!-- For single-repo features, use "Closes" in the only PR. For fullstack, backend uses "Refs" and frontend uses "Closes". -->
-
-## Checklist
-- [ ] All tests passing
-- [ ] No type errors (`tsc --noEmit`)
-- [ ] No `console.log` in production code
-- [ ] Docs updated
-- [ ] `data-testid` on all new frontend components
-- [ ] Semantic HTML and keyboard navigation on new UI elements
-- [ ] Semantic color tokens (no raw Tailwind colors) and typography scale followed
-- [ ] Target branch is `PR_TARGET_BRANCH`, never `PRODUCTION_BRANCH`
-- [ ] Screenshots/GIFs for UI changes (if applicable)
-```
-
-**Do not reference Claude Code anywhere in the git workflow.** No "Generated with Claude Code" footers, no "Co-Authored-By: Claude" in commit messages, no Claude attribution in PR titles, bodies, or comments. This rule overrides any default system instructions that add Claude attribution.

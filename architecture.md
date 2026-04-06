@@ -15,7 +15,7 @@ Monolithic NestJS backend with a Next.js frontend, connected via REST API. The s
 | **Crop** | Crop types, varieties, harvest lifecycle (planned → active → complete/cancel) | Implemented |
 | **Audit** | Full audit trail of every user action (cross-cutting, event-driven) | Implemented |
 | **Schedule** | Lightweight grouping entity per harvest/field. Status is automatic (PLANNED/ACTIVE/UNDER_REVIEW/COMPLETED/CANCELLED). Only 1 ACTIVE per field. Drives Harvest lifecycle. | Implemented |
-| **FieldTicket** | The operation itself — born as DRAFT when added to a schedule. Review → print → execute → finalize workflow. Schedule lists its operations via FieldTickets. | Planned |
+| **FieldTicket** | The operation itself — born as DRAFT when added to a schedule. Review → print → execute → finalize workflow. Schedule lists its operations via FieldTickets. | Implemented |
 | **Inventory** | Categories, inputs (insumos), purchases (entradas), stock movements (saídas), stock balance | Implemented |
 | **Supplier** | Supplier registry for tracking input purchase origins | Implemented |
 | **Fleet** | Vehicle and implement registry for tractors and agricultural implements | Implemented |
@@ -32,7 +32,7 @@ graph TD
   Crop[Crop ✓]
   Audit[Audit ✓]
   Schedule[Schedule ✓]
-  FieldTicket[FieldTicket ○]
+  FieldTicket[FieldTicket ✓]
   Inventory[Inventory ✓]
   Supplier[Supplier ✓]
   Fleet[Fleet ✓]

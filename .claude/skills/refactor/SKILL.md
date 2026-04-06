@@ -27,15 +27,6 @@ Define clearly:
 
 ---
 
-## Branch
-
-```bash
-cd backend && git checkout development && git pull && git checkout -b BE-{issue-number}/refactor-{description}
-# or frontend as needed
-```
-
----
-
 ## Baseline
 
 Before making any changes, confirm all tests pass:
@@ -110,49 +101,18 @@ Present to the user:
 
 ---
 
-## Commit and Pull Request
-
-```bash
-git add <specific files>
-git commit -m "refactor(<domain>): <description>"
-```
-
-```bash
-git push -u origin <branch-name>
-gh pr create \
-  --title "refactor(<domain>): <description>" \
-  --body "..." \
-  --base PR_TARGET_BRANCH \
-  --repo BACKEND_REPO  # or FRONTEND_REPO
-```
-
-No issue to close unless one was opened for this refactor.
-
-PR body template:
-```markdown
-## Summary
-<what was improved and why — no behavior changes>
-
-## Changes
-- <file or module>: <what changed>
-
-## Test evidence
-- Before: X/X passing, coverage X%
-- After: X/X passing, coverage X%
-- Behavior preserved: all existing tests pass unchanged
-
-## Checklist
-- [ ] All tests passing
-- [ ] No type errors (tsc --noEmit)
-- [ ] No console.log in production code
-- [ ] Coverage did not decrease
-- [ ] Target branch is PR_TARGET_BRANCH, never PRODUCTION_BRANCH
-```
-
----
-
 ## Completion
 
-After PR is created:
-1. Confirm the PR URL with the user
-2. Refactors do **not** increment the `health-check-counter`
+After Code Review approval:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⏸ HANDOFF — /refactor complete
+Completed: refactor implemented, validated, and approved
+Next step: run /commit when you are ready to commit and push
+Waiting for: explicit /commit invocation — do not proceed automatically
+DO NOT continue past this point.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+Refactors do **not** increment the `health-check-counter`.

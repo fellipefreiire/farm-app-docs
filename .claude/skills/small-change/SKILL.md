@@ -35,22 +35,6 @@ Evaluate:
 
 ---
 
-## Branch
-
-```bash
-# Backend only
-cd backend && git checkout development && git pull && git checkout -b BE-{issue-number}/{change-name}
-
-# Frontend only
-cd frontend && git checkout development && git pull && git checkout -b FE-{issue-number}/{change-name}
-
-# Fullstack
-cd backend && git checkout development && git pull && git checkout -b FS-{issue-number}/{change-name}
-cd frontend && git checkout development && git pull && git checkout -b FS-{issue-number}/{change-name}
-```
-
----
-
 ## Phase 1 — Planning
 
 Launch an `Explore` agent (Haiku) to:
@@ -76,7 +60,7 @@ cd backend && pnpm prisma migrate dev
 
 ---
 
-## Phases 3-6
+## Phases 3-5
 
 Follow [`docs/shared-phases.md`](../../../shared-phases.md) for Validation, Documentation, Code Review, and Commit/PR.
 
@@ -84,15 +68,19 @@ Follow [`docs/shared-phases.md`](../../../shared-phases.md) for Validation, Docu
 - Phase 3: **run E2E by default.** Skip E2E only if the change is strictly limited to entity fields, validation rules, or business logic fully covered by unit tests with no controller or frontend component changes. If the change touches controller signatures, API request/response shapes, frontend component behavior, or page routing, E2E is mandatory.
 - Phase 4: no plan file is created for small changes — skip plan deletion
 - Phase 5: include "Cascade effects handled" in the review summary
-- Phase 6: commit message format: `feat(<domain>): <description>` (or `fix`/`refactor` as appropriate)
-
-**Increment `health-check-counter` in `docs/reminders.md`** only after PR is successfully created. If PR creation fails, do not increment — fix the issue and retry the PR first.
-```
-health-check-counter: N+1
-```
 
 ---
 
 ## Completion
 
-After PR is created and `health-check-counter` is incremented, the small-change skill is complete. Confirm the PR URL with the user.
+After Phase 5 approval:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⏸ HANDOFF — /small-change complete
+Completed: change implemented, reviewed and approved
+Next step: run /commit when you are ready to commit and push
+Waiting for: explicit /commit invocation — do not proceed automatically
+DO NOT continue past this point.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
