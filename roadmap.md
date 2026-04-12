@@ -1,4 +1,4 @@
-# Roadmap MVP
+# Roadmap
 
 ## Alpha — Ciclo Operacional Completo
 
@@ -18,6 +18,7 @@
 |------|------|--------|
 | UI de impressao da boleta | feature | Layout 6 por A4 landscape, botao no painel, status REVIEWED->PRINTED |
 | UI de finalizacao da boleta | feature | Sheet com dados de execucao (horarios, horimetro, dosagem executada), status PRINTED->COMPLETED |
+| Automatic StockMovement on FieldTicket finalization | feature | Quando FieldTicket vai para COMPLETED, gerar StockMovement (exit) automatico para cada input consumido. Identificado como MVP-scope durante migração harness (2026-04-11) |
 | Ajustes visuais | polish | Refinamentos de UI identificados durante uso |
 
 ---
@@ -61,3 +62,30 @@ Os modulos foram construidos com o minimo para o fluxo da boleta funcionar. No B
 | Seed data representativo para demo | dados |
 | Validacao visual completa (responsividade, dark mode, acessibilidade) | UX |
 | Bug fixes encontrados durante validacao | correcao |
+
+---
+
+## Pós-MVP — Backlog
+
+> Itens identificados durante desenvolvimento que ficam fora do MVP mas valem manter rastreados. Migrados de `reminders.md` durante o rewrite de harness (2026-04-11). Itens duplicados com Beta (Fleet types, Inventory fields, Supplier fields) foram deduplicados — a versão em Beta é a de referência.
+
+### Inventory
+- Lot/batch tracking com data de validade para inputs
+- Alertas de estoque mínimo (notificar quando estoque está baixo)
+- Reserva soft — Schedule reserva estoque para planejamento; alerta quando falta produto para continuar o plano
+- Cálculo de preço unitário a partir do valor total da compra (analytics / reporting)
+
+### Schedule
+- Evoluir "Copiar Operações" de dialog simples para wizard com preview (pendente desde 2026-03-16)
+
+### Supplier
+- Comparação de preços entre fornecedores para o mesmo input
+- Histórico de compras e acompanhamento de performance do fornecedor
+
+### Fleet
+- Manutenção preventiva e corretiva (scheduling)
+- Tracking de combustível e consumo por veículo
+- Horas operacionais por veículo
+- Custo por veículo / implemento
+- Atribuição de operador (link para User)
+- Checklists de inspeção de veículo

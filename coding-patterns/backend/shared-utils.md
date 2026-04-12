@@ -146,3 +146,111 @@ export class TimeoutService { ... } // utils are plain functions
 // ❌ missing sanitize on user input
 name: z.string().min(2) // always: z.string().min(2).transform(sanitize)
 ```
+
+## Testing
+
+Shared utility functions (`src/shared/utils/`) are pure functions. Each must have a dedicated test file.
+
+```ts
+// src/shared/utils/__tests__/<util-name>.spec.ts
+import { describe, expect, it } from 'vitest'
+import { <utilFunction> } from '../<util-name>'
+
+describe('<utilFunction>', () => {
+  it('should <expected behavior on success>', async () => {
+    const result = await <utilFunction>(/* valid input */)
+    expect(result).toBe(/* expected */)
+  })
+
+  it('should <expected behavior on failure>', async () => {
+    await expect(<utilFunction>(/* failing input */)).rejects.toThrow(/* error */)
+  })
+})
+```
+
+### withTimeout test
+
+```ts
+// src/shared/utils/__tests__/with-timeout.spec.ts
+describe('withTimeout', () => {
+  it('should resolve if the promise finishes before timeout', async () => {
+    const result = await withTimeout(
+      new Promise((resolve) => setTimeout(() => resolve('ok'), 50)),
+      100,
+    )
+    expect(result).toBe('ok')
+  })
+
+  it('should reject if the promise takes longer than the timeout', async () => {
+    await expect(
+      withTimeout(
+        new Promise((resolve) => setTimeout(() => resolve('too late'), 150)),
+        50,
+      ),
+    ).rejects.toThrowError('Timeout')
+  })
+})
+```
+
+### retryWithBackoff test
+
+```ts
+// src/shared/utils/__tests__/retry-with-backoff.spec.ts
+describe('retryWithBackoff', () => {
+  it('should resolve successfully on first attempt', async () => {
+    const fn = vi.fn().mockResolvedValue('success')
+    const result = await retryWithBackoff(fn)
+    expect(result).toBe('success')
+    expect(fn).toHaveBeenCalledTimes(1)
+  })
+
+  it('should retry on failure and eventually succeed', async () => {
+    const fn = vi.fn()
+      .mockRejectedValueOnce(new Error('fail'))
+      .mockResolvedValue('success')
+    const onRetry = vi.fn()
+    const result = await retryWithBackoff(fn, { retries: 3, initialDelayMs: 10, onRetry })
+    expect(result).toBe('success')
+    expect(fn).toHaveBeenCalledTimes(2)
+    expect(onRetry).toHaveBeenCalledWith(expect.any(Error), 1)
+  })
+
+  it('should throw if all retries fail', async () => {
+    const fn = vi.fn().mockRejectedValue(new Error('fail'))
+    await expect(
+      retryWithBackoff(fn, { retries: 2, initialDelayMs: 10, onRetry: vi.fn() }),
+    ).rejects.toThrow('fail')
+  })
+})
+```
+
+### sanitize test
+
+```ts
+// src/shared/utils/__tests__/sanitize-html.spec.ts
+describe('sanitize', () => {
+  it('should remove HTML tags', () => {
+    expect(sanitize('<script>alert("xss")</script><b>bold</b>')).toBe('bold')
+  })
+
+  it('should preserve plain text', () => {
+    expect(sanitize('hello world')).toBe('hello world')
+  })
+
+  it('should strip attributes and tags', () => {
+    expect(sanitize('<a href="https://example.com">link</a>')).toBe('link')
+  })
+
+  it('should return empty string if only HTML tags are passed', () => {
+    expect(sanitize('<div><img src="x"/></div>')).toBe('')
+  })
+})
+```
+
+**Rules:**
+- Every shared util must have a corresponding test file
+- Test both success and failure paths
+- Use small `initialDelayMs` values in retry tests to avoid slow test suites
+- Pure function tests — no database, no DI, no mocking (except for retry callbacks)
+
+---

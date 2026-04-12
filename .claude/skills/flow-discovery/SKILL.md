@@ -1,57 +1,50 @@
 ---
 name: flow-discovery
-description: Guides a structured conversation to define user flows and system interactions. Output is added to docs/flows.md.
+description: Structured conversation to capture a user/system flow end-to-end. Output is appended to docs/flows/<domain>.md (per-domain file).
 ---
 
 # Flow Discovery
 
-Facilitates a structured conversation to define user flows end-to-end. The output is appended to `docs/flows.md` and serves as reference for frontend implementation and E2E test scenarios.
+Captures a farm-app flow end-to-end. Output goes into `docs/flows/<domain>.md` (per-domain file) and
+serves as reference for frontend implementation and E2E test scenarios.
 
----
+One flow per session. Ask questions **one at a time**.
 
 ## Process
 
-Ask questions **one at a time**. Focus on one flow per session.
-
 ### 1. Flow Identification
+- Flow name (e.g. "User Registration", "Place Order", "Approve Budget")
+- Actor (user role that initiates it)
+- Starting state
+- End state
 
-- What is the name of this flow? (e.g., "User Registration", "Place Order", "Approve Budget")
-- Who initiates it? (which user role)
-- What is the starting state? (e.g., "user is on the login page", "order is in draft")
-- What is the end state? (e.g., "user is authenticated", "order is confirmed and payment initiated")
+### 2. Happy Path
+Walk through each step:
+- User action
+- Frontend response (local validation, optimistic UI)
+- Backend request (method, path, body shape)
+- Backend validation + processing (use case, business rules)
+- Database effect (what persists or changes)
+- Response to frontend
+- User-visible result
 
-### 2. Happy Path Steps
-
-Walk through the flow step by step:
-- What does the user do?
-- What does the frontend do in response?
-- What request is sent to the backend?
-- What does the backend validate and process?
-- What is stored or changed in the database?
-- What is returned to the frontend?
-- What does the user see?
-
-Repeat for each step until the end state is reached.
+Repeat until end state.
 
 ### 3. Alternative Paths
+- Validation failure (frontend + backend)
+- External service unavailable
+- Unauthorized
+- Optional branches (e.g. "if user already has address, skip that step")
 
-- What happens if validation fails? (frontend and backend)
-- What happens if an external service is unavailable?
-- What happens if the user is unauthorized?
-- Are there optional branches? (e.g., "if the user already has an address, skip that step")
-
-### 4. Domain Events
-
-- Does this flow emit domain events that trigger other flows?
-- If yes, describe the downstream effect
-
----
+### 4. Downstream Effects
+- Domain events emitted that trigger other flows
+- Downstream flow impact
 
 ## Output
 
-Write the flow to `docs/flows.md`:
+Append to `docs/flows/<domain>.md` (where `<domain>` is the domain the flow belongs to — create a new file if none exists, using the template in `docs/flows/_index.md`):
 
-```markdown
+~~~markdown
 ## <Flow Name>
 
 **Actor:** <user role>
@@ -59,27 +52,22 @@ Write the flow to `docs/flows.md`:
 **End:** <end state>
 
 ### Steps
-
 1. User does X
-2. Frontend validates locally and sends POST /endpoint with { field: value }
+2. Frontend validates locally, sends POST /endpoint with { field: value }
 3. Backend validates input (Zod), checks authorization
 4. Use case enforces business rules
-5. Repository persists the result
-6. Domain event <EventName> is emitted
+5. Repository persists
+6. Domain event <EventName> emitted
 7. Backend returns { id, status }
 8. Frontend updates UI / redirects to /path
 
 ### Alternative Paths
-
 - **Validation error:** frontend shows inline error, no request sent
-- **Business rule violation:** backend returns 422 with typed error code, frontend shows message
+- **Business rule violation:** backend returns 422, typed error code, frontend shows message
 - **Unauthorized:** backend returns 401, frontend redirects to login
 
 ### Downstream Effects
-
 - <EventName> triggers <OtherFlow> in <Domain>
-
----
 
 \`\`\`mermaid
 sequenceDiagram
@@ -87,7 +75,6 @@ sequenceDiagram
   participant Frontend
   participant Backend
   participant DB
-
   User->>Frontend: action
   Frontend->>Backend: POST /endpoint
   Backend->>DB: query/persist
@@ -95,16 +82,13 @@ sequenceDiagram
   Backend-->>Frontend: response
   Frontend-->>User: feedback
 \`\`\`
-```
-
----
+~~~
 
 ## Completion
 
-Present the flow to the user and ask:
+Present the flow to the user. Ask:
 1. Is the happy path correct?
-2. Are there missing alternative paths?
-3. Are there missing downstream effects?
+2. Missing alternative paths?
+3. Missing downstream effects?
 
-If confirmed → inform the user that `docs/flows.md` has been updated.
-Ask if there are more flows to define.
+If confirmed, inform which `docs/flows/<domain>.md` file was updated. Ask if there are more flows to define.

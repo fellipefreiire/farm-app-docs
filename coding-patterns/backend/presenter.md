@@ -257,3 +257,72 @@ static toHTTP(raw: PrismaEntity) { ... }  // always accept domain entity
 // ❌ monetary value in cents without conversion
 amount: entity.amount  // if stored as cents: entity.amount / 100
 ```
+
+## Testing
+
+Presenter tests verify `toHTTP()` formatting and field exclusion (e.g. password). They are unit tests — no database required.
+
+```ts
+// src/infra/http/presenters/__tests__/<entity>-presenter.spec.ts
+import { describe, expect, it } from 'vitest'
+import { <Entity>Presenter } from '../<entity>.presenter'
+import { <Entity> } from '@/domain/<domain>/enterprise/entities/<entity>'
+import { UniqueEntityID } from '@/core/entities/unique-entity-id'
+
+describe('<Entity>Presenter', () => {
+  it('should format a <entity> entity to HTTP response', () => {
+    // Arrange
+    const createdAt = new Date('2024-01-01T00:00:00.000Z')
+    const updatedAt = new Date('2024-01-02T00:00:00.000Z')
+
+    const entity = <Entity>.reconstitute(
+      {
+        name: 'Test Name',
+        // ... all entity props
+        createdAt,
+        updatedAt,
+      },
+      new UniqueEntityID('<entity>-1'),
+    )
+
+    // Act
+    const result = <Entity>Presenter.toHTTP(entity)
+
+    // Assert
+    expect(result).toEqual({
+      id: '<entity>-1',
+      name: 'Test Name',
+      // ... all HTTP response fields
+      createdAt,
+      updatedAt,
+    })
+  })
+
+  it('should not expose sensitive fields', () => {
+    // Arrange
+    const entity = <Entity>.reconstitute(
+      {
+        name: 'Test',
+        password: 'secret-password',
+        // ... other props
+      },
+      new UniqueEntityID('<entity>-2'),
+    )
+
+    // Act
+    const result = <Entity>Presenter.toHTTP(entity)
+
+    // Assert
+    expect(result).not.toHaveProperty('password')
+  })
+})
+```
+
+**Rules:**
+- Every presenter must have a test file
+- Always test that sensitive fields (password, tokens, secrets) are excluded
+- Use `reconstitute()` to build entities in presenter tests
+- Presenter tests are pure unit tests — no database, no DI container
+- Test nullable fields: verify `undefined` is converted to `null` when applicable
+
+---
