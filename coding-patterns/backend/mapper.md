@@ -210,3 +210,104 @@ status: raw.status  // always cast explicitly: raw.status as 'ACTIVE' | 'INACTIV
 await prisma.<entity>.update({ data: Prisma<Entity>Mapper.toPrisma(entity) })
 // toPrisma() includes id and createdAt — Prisma rejects immutable fields in update
 ```
+
+## Testing
+
+Mapper tests verify `toDomain()`, `toPrisma()`, and roundtrip data preservation. They are unit tests — no database required.
+
+```ts
+// src/infra/database/prisma/mappers/<domain>/__tests__/prisma-<entity>-mapper.spec.ts
+import { describe, expect, it } from 'vitest'
+import { Prisma<Entity>Mapper } from '../prisma-<entity>.mapper'
+import { <Entity> } from '@/domain/<domain>/enterprise/entities/<entity>'
+import { UniqueEntityID } from '@/core/entities/unique-entity-id'
+import type { <Entity> as Prisma<Entity> } from '@/generated/prisma/client'
+
+describe('Prisma<Entity>Mapper', () => {
+  const now = new Date('2024-01-01T00:00:00.000Z')
+
+  const prisma<Entity>: Prisma<Entity> = {
+    id: '<entity>-1',
+    name: 'Test Name',
+    // ... all Prisma model fields
+    createdAt: now,
+    updatedAt: now,
+  }
+
+  describe('toDomain', () => {
+    it('should map a Prisma <entity> to a domain <Entity> entity', () => {
+      const entity = Prisma<Entity>Mapper.toDomain(prisma<Entity>)
+
+      expect(entity).toBeInstanceOf(<Entity>)
+      expect(entity.id.toString()).toBe('<entity>-1')
+      expect(entity.name).toBe('Test Name')
+      // ... assert all fields
+    })
+  })
+
+  describe('toPrisma', () => {
+    it('should map a domain <Entity> entity to Prisma input', () => {
+      const entity = <Entity>.reconstitute(
+        {
+          name: 'Test Name',
+          // ... all entity props
+          createdAt: now,
+        },
+        new UniqueEntityID('<entity>-2'),
+      )
+
+      const result = Prisma<Entity>Mapper.toPrisma(entity)
+
+      expect(result).toEqual({
+        id: '<entity>-2',
+        name: 'Test Name',
+        // ... all Prisma fields
+        createdAt: now,
+      })
+    })
+  })
+
+  describe('roundtrip', () => {
+    it('should preserve data through toDomain → toPrisma', () => {
+      const domain = Prisma<Entity>Mapper.toDomain(prisma<Entity>)
+      const result = Prisma<Entity>Mapper.toPrisma(domain)
+
+      expect(result.id).toBe(prisma<Entity>.id)
+      expect(result.name).toBe(prisma<Entity>.name)
+      // ... assert all fields match original
+    })
+  })
+})
+```
+
+**Special cases — nullable JSON fields:**
+
+When a mapper handles nullable JSON fields (e.g. `changes` in AuditLog), test both the value and null cases:
+
+```ts
+it('should handle null changes', () => {
+  const prismaLog: PrismaAuditLog = {
+    // ... other fields
+    changes: null,
+  }
+
+  const auditLog = PrismaAuditLogMapper.toDomain(prismaLog)
+  expect(auditLog.changes).toBeNull()
+})
+
+it('should map null changes to Prisma.JsonNull', () => {
+  const auditLog = AuditLog.create({ /* ... */ changes: null })
+  const result = PrismaAuditLogMapper.toPrisma(auditLog)
+  expect(result.changes).toBe(Prisma.JsonNull)
+})
+```
+
+**Rules:**
+- Every mapper must have a test file
+- Always test all three directions: `toDomain`, `toPrisma`, `roundtrip`
+- Use `reconstitute()` (not `create()`) when building entities for toPrisma tests — factories simulate existing records
+- Test nullable/optional fields explicitly (null JSON, optional dates, etc.)
+- Import Prisma types directly from `@prisma/client` for the raw Prisma object shape
+- Mapper tests are pure unit tests — no database, no DI container
+
+---

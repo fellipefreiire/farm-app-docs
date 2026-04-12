@@ -91,3 +91,15 @@ A motorized vehicle used in farm operations (initially tractors only). Code: `Ve
 ### Implemento
 An agricultural attachment or tool used with vehicles (sprayers, spreaders, planters, etc.). Code: `Implement`
 - **Context:** `Implement` entity in the `fleet` domain (implements subdomain). UI label: "Implemento".
+
+### Funcionário
+An employee registered in the farm, linked to a position (cargo). Not necessarily a system user. Code: `Employee`
+- **Context:** `Employee` entity in the `employee` domain. UI label: "Funcionário".
+
+### Cargo
+An organizational position within the farm (e.g., Owner, Gerente, Operador, Tratorista). Code: `Position`
+- **Context:** `Position` entity in the `employee` domain. UI label: "Cargo".
+
+### Auditoria
+A record of every user mutation in the system — who did what, when, and what changed. Code: `AuditLog`
+- **Context:** `AuditLog` entity in the `audit-log` domain. Cross-cutting: subscribes to domain events from all domains. UI label: "Histórico".

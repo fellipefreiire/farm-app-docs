@@ -1,152 +1,137 @@
 ---
 name: health-check
-description: Full project health evaluation — tests, coverage, dependencies, architecture, documentation gaps. Run on demand or when health-check-counter reaches HEALTH_CHECK_THRESHOLD.
+description: Farm-app project health audit — tests, coverage, dependencies, architecture conformance, documentation gaps, memory hygiene. On-demand only.
 ---
 
 # Health Check
 
-Comprehensive evaluation of project health across all dimensions: tests, coverage, mutation score, dependencies, architecture, security, and documentation. Produces a prioritized report and resets the `health-check-counter`.
-
----
-
-## When to Run
-
-- When `health-check-counter` in `docs/reminders.md` reaches `HEALTH_CHECK_THRESHOLD`
-- Before starting a new domain (suggested)
-- On demand by the user
-
----
+Farm-app-specific project audit. Produces a prioritized report. **Runs on
+demand only** — no auto-trigger, no counter (the previous counter lived in
+`docs/reminders.md` which was removed in the harness rewrite).
 
 ## Process
 
-Launch all agents in parallel (background):
+Dispatch in parallel via `superpowers:dispatching-parallel-agents`. All shell
+commands use `tokenzip` prefix — filters apply automatically.
 
-**Agent 1 — Tests and coverage (Bash, Haiku):**
+### Agent 1 — Tests and coverage
 ```bash
-cd backend && pnpm test --coverage
-cd backend && pnpm test:e2e
-cd frontend && pnpm build
-cd frontend && pnpm test:e2e
+cd backend && tokenzip pnpm test --coverage
+cd backend && tokenzip pnpm test:e2e
+cd frontend && tokenzip pnpm build
+cd frontend && tokenzip pnpm test:e2e
 ```
 
-**Agent 2 — Type check (Bash, Haiku):**
+### Agent 2 — Type check
 ```bash
-cd backend && tsc --noEmit
-cd frontend && tsc --noEmit
+cd backend && tokenzip tsc --noEmit
+cd frontend && tokenzip tsc --noEmit
 ```
 
-**Agent 3 — Dependencies (Bash, Haiku):**
+### Agent 3 — Dependencies
 ```bash
-cd backend && pnpm outdated
-cd backend && pnpm audit
-cd frontend && pnpm outdated
-cd frontend && pnpm audit
+cd backend && tokenzip pnpm outdated
+cd backend && tokenzip pnpm audit
+cd frontend && tokenzip pnpm outdated
+cd frontend && tokenzip pnpm audit
 ```
 
-**Agent 4 — Architecture conformance (Explore, Haiku):**
-- Scan `src/domain/`, `src/application/`, `src/infra/` for layer violations
-- Check module boundaries (no direct cross-domain imports)
-- Verify all endpoints have auth guards and Zod validation
+### Agent 4 — Architecture conformance
+Scan `backend/src/domain/`, `backend/src/application/`, `backend/src/infra/`:
+- Layer violations (wrong-direction imports)
+- Module boundary violations (direct cross-domain imports — should be Domain Events or QueryBus)
+- Endpoints without auth guards
+- Endpoints without Zod validation
 
-**Agent 5 — Documentation gaps (Explore, Haiku):**
-- Check `docs/rules/` — is there a rules file for every domain in the codebase?
-- Check `docs/api-reference.md` — does it cover all endpoints?
-- Check `docs/flows.md` — are all major user flows documented?
-- Check `docs/reminders.md` — are there unresolved items?
+### Agent 5 — Documentation gaps
+- `docs/rules/` — one file per domain in `backend/src/domain/`?
+- `docs/flows/` — one file per domain in `backend/src/domain/`, with flows documented?
+- Backend controllers — every `@Controller` has `@ApiTags` and every endpoint has `@ApiOperation` + `@ApiResponse` decorators (Swagger is canonical — no `api-reference.md` anymore)?
+- `docs/coding-patterns/` — any file > 400 lines needing split?
+- `docs/adr/` — are there architectural decisions from recent work that were not recorded as an ADR?
 
----
+### Agent 6 — Memory hygiene (claude-mem)
+- Project memory entries with `canonical: pending` older than 14 days
+- Project memory entries whose canonical link is broken or stale
+- Report findings, do not auto-delete
 
 ## Dependency Update Protocol
 
-For each outdated dependency found:
+For each outdated dependency:
 
-**Patch / Minor versions:**
-- Update freely: `pnpm update <package>`
-- Run Phase 3 validation. If passing → done.
+**Patch / Minor** — update freely, then run verification.
 
-**Major versions:**
-1. **Check `docs/reminders.md` → "Pinned dependency versions" table first.** If the package is listed there, do NOT flag it as outdated in the report — instead, re-evaluate the "Re-evaluate when" column to check if the blocker was resolved. If resolved, proceed with the update and remove the entry from the table. If still blocked, skip silently.
-2. Read the changelog and migration guide before updating anything
-3. Classify the breaking change:
-   - **Architectural change** (routing system, rendering model, module system) → **do not update**. Open a GitHub Issue to plan a dedicated migration. When ready, use `/migrate` to execute. **Add an entry to the "Pinned dependency versions" table** in `docs/reminders.md` with the reason and re-evaluation condition.
-   - **Peer dependency conflict** → **do not update**. **Add an entry to the pinned table** with the blocking peer and when to re-check.
-   - **LTS mismatch** (e.g., `@types/node` ahead of Node LTS) → **do not update**. **Add an entry to the pinned table** with the LTS cycle date.
-   - **API rename/signature change** → update all usages, run Phase 3
-   - **Deprecated function with replacement** → replace all usages, run Phase 3
-4. If in doubt whether a change is architectural → do not update, open issue, add to pinned table
+**Major** — classify first:
 
----
+| Type | Action |
+|------|--------|
+| Architectural (routing system, rendering model, module system, build pipeline) | DO NOT update. Open GitHub Issue, add to pinned list. |
+| Peer dependency conflict | DO NOT update. Add to pinned list with blocking peer. |
+| LTS mismatch (e.g. `@types/node` ahead of Node LTS) | DO NOT update. Add to pinned list with LTS cycle date. |
+| API rename / signature change | Proceed via `/migrate`. |
+| Deprecated function with replacement | Proceed via `/migrate`. |
+
+**Pinned dependencies** live in project-level `claude-mem`, tagged
+`pinned-dependency`. Each entry: package, pinned-at version, reason,
+re-evaluate-when. See `docs/memory-rules.md`.
 
 ## Output
 
 ```
 ## Health Check Report — <date>
 
-### Test Results
+### Tests
 | Suite | Result | Coverage |
-|-------|--------|----------|
-| Backend unit | X/X passing | domain+app: X%, infra: X%, overall: X% |
-| Backend E2E | X/X passing | — |
-| Frontend build | passing/failing | — |
-| Frontend E2E (Playwright) | X/X passing | — |
-| Type check (backend) | 0 errors / X errors | — |
-| Type check (frontend) | 0 errors / X errors | — |
+|---|---|---|
+| Backend unit | X/X | domain+app X%, infra X% |
+| Backend E2E | X/X | — |
+| Frontend build | pass/fail | — |
+| Frontend E2E (Playwright) | X/X | — |
+| Type check (backend) | 0 / X errors | — |
+| Type check (frontend) | 0 / X errors | — |
 
 ### Security
 | Repo | Critical CVEs | High CVEs |
-|------|--------------|-----------|
+|---|---|---|
 | Backend | 0 | 0 |
 | Frontend | 0 | 0 |
 
-### Outdated Dependencies
+### Dependencies
 | Package | Current | Latest | Type | Action |
-|---------|---------|--------|------|--------|
-| <name> | X.Y.Z | A.B.C | patch | updated |
-| <name> | X.Y.Z | A.B.C | major | issue opened |
+|---|---|---|---|---|
 
-### Pinned Dependencies (re-evaluated)
-| Package | Pinned at | Latest | Still blocked? | Reason |
-|---------|-----------|--------|----------------|--------|
-| <name> | X.Y.Z | A.B.C | yes/no | <blocker status> |
-<!-- Re-evaluate each entry from docs/reminders.md "Pinned dependency versions" table. If unblocked, update and remove from pinned table. -->
+### Pinned dependencies re-evaluated
+| Package | Pinned at | Latest | Still blocked? | Blocker |
+|---|---|---|---|---|
 
 ### Architecture
-- [ ] Layer violations found: <list or "none">
-- [ ] Module boundary violations: <list or "none">
-- [ ] Endpoints without auth: <list or "none">
-- [ ] Endpoints without validation: <list or "none">
+- Layer violations: <list or "none">
+- Module boundary violations: <list or "none">
+- Endpoints without auth: <list or "none">
+- Endpoints without validation: <list or "none">
 
-### Documentation Gaps
-- [ ] Domains without rules file: <list or "none">
-- [ ] Endpoints not in api-reference.md: <list or "none">
-- [ ] Flows not in flows.md: <list or "none">
+### Documentation gaps
+- Domains without rules file: <list>
+- Endpoints without Swagger decorators: <list>
+- Domains without flows file: <list>
+- Coding patterns > 400 lines: <list>
 
-### Issues Found
-**Critical** (block next feature):
-- <issue>
+### Memory hygiene
+- Stale pending entries: <list>
+- Broken canonical links: <list>
 
-**Important** (add to backlog):
-- <issue>
-
-**Minor** (fix when convenient):
-- <issue>
+### Issues
+**Critical** (block next feature): <list>
+**Important** (add to backlog): <list>
+**Minor** (fix when convenient): <list>
 
 ### Verdict
-HEALTHY — project is in good shape, ready to continue.
-NEEDS ATTENTION — address critical items before next feature.
+HEALTHY / NEEDS ATTENTION
 ```
-
----
 
 ## Completion
 
-After presenting the report:
-
-1. Open GitHub Issues for any important or critical items not immediately fixed
-2. Reset `health-check-counter` in `docs/reminders.md` (reset happens after the report, regardless of whether fixes are applied — the counter tracks when to run the check, not fix completion):
-   ```
-   health-check-counter: 0
-   ```
-3. If major dependency updates were classified as non-architectural, suggest: "There are N major updates ready for migration. Do you want me to run `/migrate` for any of them?" If the user agrees, run `/migrate` once per dependency sequentially. After each migration, ask whether to continue with the next or stop.
-4. If critical issues were found, recommend fixing them first: "There are N critical issues. I recommend addressing them before starting the next feature."
-5. Ask the user: "Health check complete. Proceed with the next feature?"
+1. Open GitHub Issues for Critical and Important items not fixed immediately.
+2. Report findings to the user.
+3. If Critical issues exist: recommend fixing before next feature.
+4. Ask: "Proceed with next feature?"

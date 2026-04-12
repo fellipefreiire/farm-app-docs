@@ -112,7 +112,7 @@ Per-layer thresholds enforced during Phase 3 validation:
 | Shared + core (`src/shared/`, `src/core/`) | 90% |
 | Infrastructure (`src/infra/`) — when tested | 70% |
 
-The `break: 70` in the config is a global safety net. The per-layer thresholds above are stricter and enforced by the validation process in `shared-phases.md`.
+The `break: 70` in the config is a global safety net. The per-layer thresholds above are stricter — they are enforced by the verification process documented in `docs/verification-rules.md` and invoked by `/finish` before any integration.
 
 ---
 
@@ -167,7 +167,7 @@ expect(inMemoryAuditLogRepository.items[0]).toEqual(
 ## Timeout handling
 
 - **Per-mutant timeout:** Stryker default (`timeoutMS`). A single mutant that hangs is killed and marked as timeout (counts as detected).
-- **Total process timeout:** 10 minutes, enforced by the Phase 3 process. If exceeded, the user is asked whether to wait or skip. See `shared-phases.md` for details.
+- **Total process timeout:** 10 minutes, enforced by the verification step in `/finish`. If exceeded, the user is asked whether to wait or skip. See `docs/verification-rules.md` (Stryker section) for the full timeout policy.
 
 ---
 

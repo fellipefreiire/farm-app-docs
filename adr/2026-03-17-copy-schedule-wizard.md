@@ -1,0 +1,7 @@
+# 2026-03-17 — Copy schedule wizard with preview endpoint and conflict resolution
+
+**Context:** The original copy schedule feature only supported copying to UNSCHEDULED harvests with offset date mode. Users needed more control: choice of date mode (offset vs absolute), ability to copy to harvests with existing schedules (add or replace), inline harvest creation, and a preview step before executing.
+**Decision:** Implement a 4-step wizard (target → config → preview → confirm) with a new GET preview endpoint that returns the copy mapping without executing. The POST endpoint now accepts `dateMode` (offset/absolute) and `conflictResolution` (add/replace) parameters with backward-compatible defaults.
+**Options considered:** (A) Enhance existing dialog with more fields / (B) Multi-step wizard with preview (chosen)
+**Rationale:** The preview step prevents user mistakes (operations out of range, unintended replacements). The wizard provides progressive disclosure — users only see conflict resolution when it's relevant. The preview endpoint is read-only, avoiding accidental mutations.
+**Consequences:** New `softDeleteByScheduleId` method added to operations repository. `CopyScheduleUseCase` no longer requires UNSCHEDULED status — accepts any harvest. Old `CopyScheduleDialog` and `CopyScheduleForm` deprecated in favor of `CopyScheduleWizard`. Store renamed `copyScheduleDialogOpen` → `copyScheduleWizardOpen`. New shadcn/ui components added: Tabs, RadioGroup, Badge, Alert.
