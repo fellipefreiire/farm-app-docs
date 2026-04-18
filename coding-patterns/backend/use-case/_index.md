@@ -108,14 +108,11 @@ Core errors available for reuse:
 
 - Always `@Injectable()` — use cases are NestJS providers (this is a pragmatic trade-off: pure DDD avoids framework decorators in domain, but NestJS requires `@Injectable()` for dependency injection without custom provider factories)
 - Request and response types are `type` aliases defined in the same file
-- Response is always `Either<Error, { data: ... }>` — never throws
 - Left side lists all possible error types — if none, use `null`
 - Always include a one-line JSDoc comment describing what the use case does
 - **Never import** Prisma, HTTP types (Request, Response), or NestJS decorators beyond `@Injectable()`
-- **Never import** repositories or error classes from other domains — use QueryBus for cross-domain data (see `query-bus.md`)
 - **Never contain business logic** — business rules belong in the entity
 - **Never call another use case** — compose at the controller level if needed
-- List use cases always return `PaginationMeta` — never return unbounded arrays
 - `actorId` is always passed to entity methods that mutate state (for domain events and audit trail)
 - Use `findActiveById()` for standard reads, edit, and toggle operations — use `findById()` only for delete and audit scenarios that need the entity regardless of soft-delete status
 
@@ -145,9 +142,6 @@ return right({ data: await this.repo.findAll() }) // always paginate
 constructor(
   private otherUseCase: OtherUseCase, // never inject use cases
 ) {}
-
-// ❌ calling reconstitute() in use case (event never fires)
-const entity = <Entity>.reconstitute(props, new UniqueEntityID()) // use create(props, actorId)
 
 // ❌ syncing join table from use case (breaks atomicity, duplicates repository responsibility)
 await this.<entity>Repository.save(entity)

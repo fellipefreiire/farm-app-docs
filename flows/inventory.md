@@ -41,6 +41,7 @@
 3. Items container scrolls independently — submit button stays fixed at bottom
 4. Edit: actions popover → "Editar" → sheet opens → fills edit reason → modifies fields → submits
 5. Delete: actions popover → "Excluir" → confirmation dialog → confirms → redirects to /purchases
+   > ⚠️ Contradiction with rules/inventory.md: purchases cannot be deleted. Resolve before implementing.
 6. Detail page: shows items list (linked to inputs), supplier link, audit logs
 
 ## Register stock movement (saída) [MVP]

@@ -12,28 +12,28 @@ demand only** — no auto-trigger, no counter (the previous counter lived in
 ## Process
 
 Dispatch in parallel via `superpowers:dispatching-parallel-agents`. All shell
-commands use `tokenzip` prefix — filters apply automatically.
+commands use `contextzip` prefix — filters apply automatically.
 
 ### Agent 1 — Tests and coverage
 ```bash
-cd backend && tokenzip pnpm test --coverage
-cd backend && tokenzip pnpm test:e2e
-cd frontend && tokenzip pnpm build
-cd frontend && tokenzip pnpm test:e2e
+cd backend && contextzip pnpm test --coverage
+cd backend && contextzip pnpm test:e2e
+cd frontend && contextzip pnpm build
+cd frontend && contextzip pnpm test:e2e
 ```
 
 ### Agent 2 — Type check
 ```bash
-cd backend && tokenzip tsc --noEmit
-cd frontend && tokenzip tsc --noEmit
+cd backend && contextzip tsc --noEmit
+cd frontend && contextzip tsc --noEmit
 ```
 
 ### Agent 3 — Dependencies
 ```bash
-cd backend && tokenzip pnpm outdated
-cd backend && tokenzip pnpm audit
-cd frontend && tokenzip pnpm outdated
-cd frontend && tokenzip pnpm audit
+cd backend && contextzip pnpm outdated
+cd backend && contextzip pnpm audit
+cd frontend && contextzip pnpm outdated
+cd frontend && contextzip pnpm audit
 ```
 
 ### Agent 4 — Architecture conformance

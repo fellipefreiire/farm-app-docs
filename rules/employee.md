@@ -2,13 +2,13 @@
 
 ## Responsibility
 
-Manage employee registration and organizational positions (cargos) within the farm.
+Manage employee registration and organizational positions (cargos) within farm.
 
 ## Out of scope
 
 - Payroll management
 - Time tracking / work hours
-- System access permissions (future: Permission domain will handle dynamic permissions per Position)
+- System access permissions (future: Permission domain handle dynamic permissions per Position)
 - Authentication / user account management (owned by User domain)
 
 ## Entities
@@ -21,7 +21,7 @@ Manage employee registration and organizational positions (cargos) within the fa
 | name | string | yes | non-empty |
 | cpf | CPF (Value Object) | yes | valid CPF, unique across all employees |
 | phone | string | no | |
-| hireDate | Date | yes | cannot be in the future |
+| hireDate | Date | yes | cannot be in future |
 | status | enum EmployeeStatus | yes | ACTIVE, INACTIVE — default ACTIVE |
 | positionId | UUID | yes | reference to Position |
 | userId | UUID | no | reference to User (optional — not every employee has system access) |
@@ -29,10 +29,10 @@ Manage employee registration and organizational positions (cargos) within the fa
 | updatedAt | DateTime | yes | set on every update |
 
 **Invariants:**
-- CPF must be unique across all employees (including inactive ones)
-- userId must be unique — one User maps to at most one Employee
-- positionId must reference an existing Position
-- Every User (except owner) is an Employee, but not every Employee has a User
+- CPF unique across all employees (including inactive)
+- userId unique — one User maps to at most one Employee
+- positionId must reference existing Position
+- Every User (except owner) is Employee, but not every Employee has User
 
 **Lifecycle:**
 
@@ -41,9 +41,9 @@ ACTIVE → INACTIVE
 INACTIVE → ACTIVE
 ```
 
-- ACTIVE: default status on creation
-- INACTIVE: soft-deactivated employee (preserved for historical references)
-- Reactivation is allowed (INACTIVE → ACTIVE)
+- ACTIVE: default on creation
+- INACTIVE: soft-deactivated (preserved for historical references)
+- Reactivation allowed (INACTIVE → ACTIVE)
 
 ### Position (Cargo)
 
@@ -55,61 +55,61 @@ INACTIVE → ACTIVE
 | updatedAt | DateTime | yes | set on every update |
 
 **Invariants:**
-- Name must be unique (case-insensitive)
-- Cannot be deleted if employees are linked to it
+- Name unique (case-insensitive)
+- Cannot delete if employees linked
 
 **Lifecycle:** no state machine
 
-**Seed data:** Owner, Gerente, Operador, Tratorista, Auxiliar (predefined positions created via seed)
+**Seed data:** Owner, Gerente, Operador, Tratorista, Auxiliar (predefined, created via seed)
 
 ## Value Objects
 
-- **CPF** — Brazilian individual taxpayer number. 11 digits. Validated using the standard check-digit algorithm (two verification digits). Stored without formatting (digits only). Displayed with formatting (XXX.XXX.XXX-XX).
+- **CPF** — Brazilian individual taxpayer number. 11 digits. Validated via standard check-digit algorithm (two verification digits). Stored without formatting (digits only). Displayed with formatting (XXX.XXX.XXX-XX).
 
 ## Use Cases
 
 ### CreateEmployee
-- **Trigger:** user creates a new employee from the employees page
+- **Trigger:** user creates employee from employees page
 - **Input:** name, cpf, phone (optional), hireDate, positionId, userId (optional)
-- **Rules:** CPF must be valid and unique. positionId must reference an existing Position. userId (if provided) must reference an existing User and not be already linked to another Employee.
+- **Rules:** CPF valid + unique. positionId must reference existing Position. userId (if provided) must reference existing User not already linked to another Employee.
 - **Success:** Employee created with status ACTIVE
 - **Errors:** InvalidCpfError, CpfAlreadyExistsError, PositionNotFoundError, UserNotFoundError, UserAlreadyLinkedError
 - **Events emitted:** EmployeeCreatedEvent
 
 ### EditEmployee
-- **Trigger:** user edits employee information
+- **Trigger:** user edits employee info
 - **Input:** employeeId, name, cpf, phone, hireDate, positionId, userId
-- **Rules:** same validation as create. CPF uniqueness checked excluding current employee. userId uniqueness checked excluding current employee.
+- **Rules:** same validation as create. CPF uniqueness excludes current employee. userId uniqueness excludes current employee.
 - **Success:** Employee updated
 - **Errors:** EmployeeNotFoundError, InvalidCpfError, CpfAlreadyExistsError, PositionNotFoundError, UserNotFoundError, UserAlreadyLinkedError
 - **Events emitted:** EmployeeUpdatedEvent
 
 ### InactivateEmployee
-- **Trigger:** user deactivates an employee (soft delete)
+- **Trigger:** user deactivates employee (soft delete)
 - **Input:** employeeId
 - **Rules:** Employee must be ACTIVE
-- **Success:** status changes to INACTIVE
+- **Success:** status → INACTIVE
 - **Errors:** EmployeeNotFoundError, EmployeeAlreadyInactiveError
 - **Events emitted:** EmployeeInactivatedEvent
 
 ### ActivateEmployee
-- **Trigger:** user reactivates an inactive employee
+- **Trigger:** user reactivates inactive employee
 - **Input:** employeeId
 - **Rules:** Employee must be INACTIVE
-- **Success:** status changes to ACTIVE
+- **Success:** status → ACTIVE
 - **Errors:** EmployeeNotFoundError, EmployeeAlreadyActiveError
 - **Events emitted:** EmployeeActivatedEvent
 
 ### DeleteEmployee
-- **Trigger:** user deletes an employee that has no operational history
+- **Trigger:** user deletes employee with no operational history
 - **Input:** employeeId
-- **Rules:** Employee must have no references in other domains (no FieldTickets, no operations). If references exist, reject deletion — user should inactivate instead.
+- **Rules:** Employee must have no references in other domains (no FieldTickets, no operations). If references exist, reject — user should inactivate instead.
 - **Success:** Employee hard deleted
 - **Errors:** EmployeeNotFoundError, EmployeeHasReferencesError
 - **Events emitted:** EmployeeDeletedEvent
 
 ### ListEmployees
-- **Trigger:** user navigates to the employees page
+- **Trigger:** user navigates to employees page
 - **Input:** pagination params, optional filters (status, positionId, search by name)
 - **Rules:** paginated, default sorted by name
 - **Success:** paginated list of Employee entities with Position name resolved
@@ -117,33 +117,33 @@ INACTIVE → ACTIVE
 - **Events emitted:** none
 
 ### GetEmployee
-- **Trigger:** user opens an employee detail page
+- **Trigger:** user opens employee detail page
 - **Input:** employeeId
 - **Rules:** none
-- **Success:** Employee entity with Position and User details resolved
+- **Success:** Employee with Position and User details resolved
 - **Errors:** EmployeeNotFoundError
 - **Events emitted:** none
 
 ### CreatePosition
-- **Trigger:** owner creates a new position
+- **Trigger:** owner creates new position
 - **Input:** name
-- **Rules:** name must be unique (case-insensitive)
+- **Rules:** name unique (case-insensitive)
 - **Success:** Position created
 - **Errors:** PositionNameAlreadyExistsError
 - **Events emitted:** PositionCreatedEvent
 
 ### EditPosition
-- **Trigger:** owner edits a position name
+- **Trigger:** owner edits position name
 - **Input:** positionId, name
-- **Rules:** name must be unique (case-insensitive), excluding current position
+- **Rules:** name unique (case-insensitive), excluding current position
 - **Success:** Position updated
 - **Errors:** PositionNotFoundError, PositionNameAlreadyExistsError
 - **Events emitted:** PositionUpdatedEvent
 
 ### DeletePosition
-- **Trigger:** owner deletes a position
+- **Trigger:** owner deletes position
 - **Input:** positionId
-- **Rules:** Position must have no employees linked to it. Frontend shows delete option as disabled when employees are linked.
+- **Rules:** Position must have no linked employees. Frontend disables delete button when employees linked.
 - **Success:** Position hard deleted
 - **Errors:** PositionNotFoundError, PositionHasEmployeesError
 - **Events emitted:** PositionDeletedEvent
@@ -157,7 +157,7 @@ INACTIVE → ACTIVE
 - **Events emitted:** none
 
 ### ListEmployeeAuditLogs
-- **Trigger:** user views audit history for an employee
+- **Trigger:** user views audit history for employee
 - **Input:** employeeId, cursor pagination
 - **Rules:** none
 - **Success:** paginated audit log entries
@@ -165,7 +165,7 @@ INACTIVE → ACTIVE
 - **Events emitted:** none
 
 ### ListPositionAuditLogs
-- **Trigger:** user views audit history for a position
+- **Trigger:** user views audit history for position
 - **Input:** positionId, cursor pagination
 - **Rules:** none
 - **Success:** paginated audit log entries
@@ -176,7 +176,7 @@ INACTIVE → ACTIVE
 
 - **Depends on:** User (userId — optional reference, by ID only)
 - **Emits events consumed by:** Audit (all mutation events → audit trail)
-- **Referenced by:** FieldTicket (Employee as tractor operator — linked on finalization). Replaces the current `operatorName` free-text field.
+- **Referenced by:** FieldTicket (Employee as tractor operator — linked on finalization). Replaces current `operatorName` free-text field.
 - **Future:** Permission domain will reference Position for dynamic role-based permissions
 
 ## Authorization
@@ -199,25 +199,25 @@ INACTIVE → ACTIVE
 
 ## Constraints
 
-- CPF is unique across all employees (active and inactive)
-- userId is unique — one-to-one mapping between User and Employee
-- Position name is unique (case-insensitive)
-- Position cannot be deleted if employees are linked
-- Employee hard delete only when no cross-domain references exist; otherwise soft delete (inactivate)
+- CPF unique across all employees (active and inactive)
+- userId unique — one-to-one mapping between User and Employee
+- Position name unique (case-insensitive)
+- Position cannot delete if employees linked
+- Employee hard delete only when no cross-domain references; otherwise soft delete (inactivate)
 - All mutations audited via domain events
 - Predefined positions seeded on first setup (Owner, Gerente, Operador, Tratorista, Auxiliar)
 
 ## Edge Cases
 
-- User tries to delete an employee who has finalized FieldTickets → reject with EmployeeHasReferencesError, suggest inactivation
-- User tries to delete a position with linked employees → reject with PositionHasEmployeesError (button disabled in frontend)
-- User assigns a userId that is already linked to another employee → reject with UserAlreadyLinkedError
-- User creates employee with duplicate CPF → reject with CpfAlreadyExistsError
+- Delete employee with finalized FieldTickets → reject with EmployeeHasReferencesError, suggest inactivation
+- Delete position with linked employees → reject with PositionHasEmployeesError (button disabled in frontend)
+- Assign userId already linked to another employee → reject with UserAlreadyLinkedError
+- Create employee with duplicate CPF → reject with CpfAlreadyExistsError
 - Inactive employee still appears in historical records (FieldTicket references preserved)
 - Position rename propagates visually (references by ID, name resolved at query time)
-- Owner position from seed — can it be deleted? No, seed positions should be protected or at minimum follow the same "has employees" rule
+- Owner position from seed — can it be deleted? No, seed positions protected or follow same "has employees" rule
 
 ## Open Questions
 
-- Should the FieldTicket `operatorName` migration happen as part of this domain implementation or as a separate small-change after Employee is live?
-- Should there be a bulk import feature for employees (e.g., CSV upload)? Deferred for now.
+- Should FieldTicket `operatorName` migration happen as part of this domain implementation or as separate small-change after Employee is live?
+- Bulk import for employees (e.g., CSV upload)? Deferred.

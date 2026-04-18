@@ -1,6 +1,6 @@
 # Mapper Pattern
 
-Mappers translate between Prisma records and domain entities. They are static utility classes — no constructor, no state, no injection.
+Mappers translate Prisma records ↔ domain entities. Static utility classes — no constructor, no state, no injection.
 
 ---
 
@@ -10,7 +10,7 @@ Mappers translate between Prisma records and domain entities. They are static ut
 src/infra/database/prisma/mappers/<domain>/prisma-<entity>.mapper.ts
 ```
 
-> **Multi-entity domains:** When the domain uses subdomain folders (see `domain-organization.md`), mappers also use subdomain folders: `src/infra/database/prisma/mappers/<domain>/<subdomain>/`.
+> **Multi-entity domains:** When domain uses subdomain folders (see `domain-organization.md`), mappers also use subdomain folders: `src/infra/database/prisma/mappers/<domain>/<subdomain>/`.
 
 ---
 
@@ -60,13 +60,13 @@ export class Prisma<Entity>Mapper {
 }
 ```
 
-`toPrismaUpdate()` omits `id` and `createdAt` (immutable) and returns `Prisma.<Entity>UncheckedUpdateInput`. Used by `save()` in the Prisma repository.
+`toPrismaUpdate()` omits `id` and `createdAt` (immutable), returns `Prisma.<Entity>UncheckedUpdateInput`. Used by `save()` in Prisma repository.
 
 ---
 
 ## With relations
 
-When the Prisma query includes a relation (e.g. `include: { role: true }`), declare a composite type:
+When Prisma query includes relation (e.g. `include: { role: true }`), declare composite type:
 
 ```ts
 import type {
@@ -109,7 +109,7 @@ export class Prisma<Entity>Mapper {
 
 ## With WatchedList (nested collection)
 
-When the entity holds a WatchedList, the mapper reconstructs it from the included relation:
+When entity holds WatchedList, mapper reconstructs it from included relation:
 
 ```ts
 // <Child> here refers to the join entity (e.g. ProductCategory), not the target entity
@@ -154,7 +154,7 @@ export class Prisma<Entity>Mapper {
 
 ## With enums
 
-Prisma enums are stored as strings. Cast explicitly — never trust implicit assignment:
+Prisma enums stored as strings. Cast explicitly — never trust implicit assignment:
 
 ```ts
 static toDomain(raw: Prisma<Entity>): <Entity> {
@@ -173,15 +173,15 @@ static toDomain(raw: Prisma<Entity>): <Entity> {
 
 ## Rules
 
-- Always a static class — never instantiated, never injected
-- `toDomain()` always calls `<Entity>.reconstitute()` — never `<Entity>.create()` (which would emit spurious domain events)
+- Always static class — never instantiated, never injected
+- `toDomain()` always calls `<Entity>.reconstitute()` — never `<Entity>.create()` (emits spurious domain events)
 - `toPrisma()` returns `Prisma.<Entity>UncheckedCreateInput` for creates
 - `toPrismaUpdate()` returns `Prisma.<Entity>UncheckedUpdateInput` for updates — omits `id` and `createdAt`
 - Null Prisma fields map to `undefined` in domain (`raw.field ?? undefined`) — domain uses `undefined`, not `null`
-- FK IDs are always wrapped in `new UniqueEntityID(raw.fieldId)` in `toDomain`
-- FK IDs are always `.toString()` in `toPrisma`
-- WatchedList children are **never** included in `toPrisma` — they are handled by the join repository
-- Relations are included in `toDomain` composite type for read, but never nested in `toPrisma` for write
+- FK IDs always wrapped in `new UniqueEntityID(raw.fieldId)` in `toDomain`
+- FK IDs always `.toString()` in `toPrisma`
+- WatchedList children **never** included in `toPrisma` — handled by join repository
+- Relations included in `toDomain` composite type for read, never nested in `toPrisma` for write
 - Enum casts must be explicit (`as 'A' | 'B'`) — never rely on implicit type compatibility
 
 ---
@@ -213,7 +213,7 @@ await prisma.<entity>.update({ data: Prisma<Entity>Mapper.toPrisma(entity) })
 
 ## Testing
 
-Mapper tests verify `toDomain()`, `toPrisma()`, and roundtrip data preservation. They are unit tests — no database required.
+Mapper tests verify `toDomain()`, `toPrisma()`, roundtrip data preservation. Unit tests — no database required.
 
 ```ts
 // src/infra/database/prisma/mappers/<domain>/__tests__/prisma-<entity>-mapper.spec.ts
@@ -282,7 +282,7 @@ describe('Prisma<Entity>Mapper', () => {
 
 **Special cases — nullable JSON fields:**
 
-When a mapper handles nullable JSON fields (e.g. `changes` in AuditLog), test both the value and null cases:
+When mapper handles nullable JSON fields (e.g. `changes` in AuditLog), test both value and null cases:
 
 ```ts
 it('should handle null changes', () => {
@@ -303,11 +303,11 @@ it('should map null changes to Prisma.JsonNull', () => {
 ```
 
 **Rules:**
-- Every mapper must have a test file
+- Every mapper must have test file
 - Always test all three directions: `toDomain`, `toPrisma`, `roundtrip`
 - Use `reconstitute()` (not `create()`) when building entities for toPrisma tests — factories simulate existing records
 - Test nullable/optional fields explicitly (null JSON, optional dates, etc.)
-- Import Prisma types directly from `@prisma/client` for the raw Prisma object shape
+- Import Prisma types directly from `@prisma/client` for raw Prisma object shape
 - Mapper tests are pure unit tests — no database, no DI container
 
 ---

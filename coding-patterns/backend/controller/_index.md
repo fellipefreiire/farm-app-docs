@@ -43,14 +43,6 @@ One controller per endpoint. One file per controller.
 
 ---
 
-## Authentication — default behavior
-
-**All endpoints require JWT authentication by default.** The `JwtAuthGuard` is applied globally.
-
-Use `@Public()` **only when explicitly required** — e.g. sign-in, sign-up, public listings. Never assume an endpoint is public. If the domain rules file does not explicitly state an endpoint is public, it is private.
-
----
-
 ## Rules
 
 - **Route ordering matters** — in NestJS modules, register more specific routes (`:id/audit-logs`) BEFORE wildcard routes (`:id`). The first matching route wins
@@ -99,11 +91,4 @@ export class <Entity>Controller {
 // ❌ no API versioning
 @Controller('<entities>') // always: { path: '<entities>', version: '1' }
 
-// ❌ wildcard route registered before sub-resource route — shadows audit-logs
-@Module({
-  controllers: [
-    FindEntityByIdController,        // @Get(':id') catches everything
-    ListEntityAuditLogsController,   // @Get(':id/audit-logs') never reached
-  ],
-})
 ```

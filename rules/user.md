@@ -17,7 +17,7 @@ Manages user identity, authentication, and account lifecycle (creation, login, l
 | name | string | yes | — |
 | email | string | yes | must be unique across all users |
 | password | string | yes | stored as hash, never plaintext |
-| role | enum (ADMIN, USER) | yes | defaults to USER on creation |
+| role | enum (ADMIN, OWNER, MANAGER) | yes | defaults to OWNER on creation |
 | active | boolean | yes | defaults to true on creation |
 | createdAt | Date | yes | set on creation |
 | updatedAt | Date | no | set on any mutation |
@@ -78,7 +78,7 @@ None — email and password are stored as primitives. If validation rules grow, 
 ## Authorization
 - `AuthenticateUser`: public (no auth required)
 - `RefreshUserToken`: public (no auth required, token-based)
-- `CreateUser`: ADMIN only
+- `CreateUser`: ADMIN only (system admin creates users for tenants)
 - `LogoutUser`: authenticated user (self)
 
 ## Constraints

@@ -1,6 +1,6 @@
 # Presenter Pattern
 
-Presenters format domain entities into HTTP response shapes. They are static utility classes — no constructor, no state, no injection.
+Presenters format domain entities into HTTP response shapes. Static utility classes — no constructor, no state, no injection.
 
 ---
 
@@ -60,7 +60,7 @@ export class <Entity>Presenter {
 
 ## Structure — with optional relation (denormalized read)
 
-When an entity carries a denormalized field from a relation (e.g. `roleName` loaded alongside `roleId`):
+Entity carries denormalized field from relation (e.g. `roleName` loaded alongside `roleId`):
 
 ```ts
 export class <Entity>Presenter {
@@ -82,7 +82,7 @@ export class <Entity>Presenter {
 
 ## Structure — with augmented type (extra data not in entity)
 
-When the presenter needs data that isn't in the entity (e.g. actor name from a join), extend the entity type:
+Presenter needs data not in entity (e.g. actor name from join) — extend entity type:
 
 ```ts
 import type { <Entity> } from '@/domain/<domain>/enterprise/entities/<entity>'
@@ -112,7 +112,7 @@ export class <Entity>Presenter {
 
 ## Structure — with extra params (optional injected data)
 
-When related data is fetched separately and passed alongside the entity:
+Related data fetched separately, passed alongside entity:
 
 ```ts
 export class <Entity>Presenter {
@@ -139,7 +139,7 @@ export class <Entity>Presenter {
 
 ## Structure — audit log presenter (with ID resolution)
 
-The audit log presenter accepts extra params for actor name and a resolved names map. It enriches `changes` fields by replacing raw IDs with human-readable names from the map.
+Audit log presenter accepts extra params for actor name and resolved names map. Enriches `changes` fields by replacing raw IDs with human-readable names.
 
 ```ts
 import type { AuditLog } from '@/domain/audit-log/enterprise/entities/audit-log'
@@ -195,13 +195,13 @@ export class AuditLogPresenter {
 }
 ```
 
-The controller passes `actorNames.get(log.actorId)` and the full `resolvedNames` map. The presenter tries to resolve every string value — if not in the map, it falls back to the raw value.
+Controller passes `actorNames.get(log.actorId)` and full `resolvedNames` map. Presenter tries to resolve every string value — falls back to raw value if not in map.
 
 ---
 
 ## Date-only fields
 
-When a field stores only a date (no time) — e.g. `@db.Date` in Prisma — format as ISO date string to avoid timezone shifting on the frontend:
+Field stores only date (no time) — e.g. `@db.Date` in Prisma — format as ISO date string to avoid timezone shifting on frontend:
 
 ```ts
 function formatDateOnly(date: Date): string {
@@ -226,16 +226,16 @@ amount: entity.amount / 100,  // stored as 1999, returned as 19.99
 
 ## Rules
 
-- Always a static class — never instantiated, never injected
-- `id` is always `.toString()` — `UniqueEntityID` is not a plain string
-- All FK IDs are always `.toString()`
-- WatchedList items accessed via `.getItems()` — never access `.currentItems` directly
-- Optional relations: use ternary — `entity.relatedId ? { id, name } : null`
-- Never return raw Prisma objects — always pass through the entity
+- Always static class — never instantiated, never injected
+- `id` always `.toString()` — `UniqueEntityID` not plain string
+- All FK IDs always `.toString()`
+- WatchedList items via `.getItems()` — never access `.currentItems` directly
+- Optional relations: ternary — `entity.relatedId ? { id, name } : null`
+- Never return raw Prisma objects — always pass through entity
 - Never add business logic — only shape transformation and formatting
-- Monetary amounts stored as integers (cents) must be divided by 100 on output
-- Date-only fields must be formatted as `YYYY-MM-DD` string to avoid timezone issues
-- Optional domain fields (`undefined`) must be converted to `null` in `toHTTP()` using `?? null` — `JSON.stringify` omits `undefined` keys, breaking API contracts
+- Monetary amounts stored as integers (cents) must divide by 100 on output
+- Date-only fields must format as `YYYY-MM-DD` string to avoid timezone issues
+- Optional domain fields (`undefined`) must convert to `null` in `toHTTP()` via `?? null` — `JSON.stringify` omits `undefined` keys, breaking API contracts
 
 ---
 
@@ -260,7 +260,7 @@ amount: entity.amount  // if stored as cents: entity.amount / 100
 
 ## Testing
 
-Presenter tests verify `toHTTP()` formatting and field exclusion (e.g. password). They are unit tests — no database required.
+Presenter tests verify `toHTTP()` formatting and field exclusion (e.g. password). Unit tests — no database.
 
 ```ts
 // src/infra/http/presenters/__tests__/<entity>-presenter.spec.ts
@@ -319,10 +319,8 @@ describe('<Entity>Presenter', () => {
 ```
 
 **Rules:**
-- Every presenter must have a test file
-- Always test that sensitive fields (password, tokens, secrets) are excluded
+- Every presenter must have test file
+- Always test sensitive fields (password, tokens, secrets) excluded
 - Use `reconstitute()` to build entities in presenter tests
-- Presenter tests are pure unit tests — no database, no DI container
-- Test nullable fields: verify `undefined` is converted to `null` when applicable
-
----
+- Presenter tests pure unit tests — no database, no DI container
+- Test nullable fields: verify `undefined` converts to `null` when applicable

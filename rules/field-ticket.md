@@ -2,11 +2,11 @@
 
 ## Responsibility
 
-The FieldTicket IS the operation. It is born as DRAFT when the manager adds an operation to a schedule, reviewed with equipment configuration, printed for field execution, and finalized with actual execution data. There is no separate "operation" entity — the ticket is the single source of truth from planning through execution.
+FieldTicket IS operation. Born as DRAFT when manager adds operation to schedule, reviewed with equipment config, printed for field execution, finalized with actual execution data. No separate "operation" entity — ticket is single source of truth from planning through execution.
 
 ## Out of scope
 
-- Schedule lifecycle management (owned by Schedule domain — Schedule is the grouping entity)
+- Schedule lifecycle management (owned by Schedule domain — Schedule is grouping entity)
 - Inventory stock control logic (owned by Inventory domain — FieldTicket only emits events)
 - Vehicle/implement registry (owned by Fleet domain — referenced by ID)
 - Employee/operator registry (post-MVP — `operatorName` is free text for now)
@@ -35,7 +35,7 @@ The FieldTicket IS the operation. It is born as DRAFT when the manager adds an o
 | pressure | float | no | pressure in Bar (set during review) |
 | gearNumber | int | no | tractor gear number (1–6) (set during review) |
 | gearType | enum GearType | no | SIMPLE, REDUCED (set during review) |
-| ph | string | no | pH range of the spray mix, e.g. "5-6" (set during review) |
+| ph | string | no | pH range of spray mix, e.g. "5-6" (set during review) |
 | operatorName | string | no | tractor operator name — free text (future: Employee reference) |
 | startTime | string | no | operation start time, e.g. "07:30" (filled during finalization) |
 | endTime | string | no | operation end time, e.g. "11:45" (filled during finalization) |
@@ -46,15 +46,15 @@ The FieldTicket IS the operation. It is born as DRAFT when the manager adds an o
 | updatedAt | DateTime | yes | set on every update |
 
 **Invariants:**
-- Date must fall within the Harvest period (startDate to expectedEndDate)
+- Date must fall within Harvest period (startDate to expectedEndDate)
 - Cannot transition to REVIEWED without vehicleId and implementId
 - Cannot transition to PRINTED without status REVIEWED
 - Cannot transition to COMPLETED without status PRINTED
-- Cannot cancel a COMPLETED ticket
-- cancelReason is required when cancelling
-- vehicleId must reference an active Vehicle
-- implementId must reference an active Implement
-- A day can have multiple operations (same or different types)
+- Cannot cancel COMPLETED ticket
+- cancelReason required when cancelling
+- vehicleId must reference active Vehicle
+- implementId must reference active Implement
+- Day can have multiple operations (same or different types)
 - Must have at least one FieldTicketInput
 
 **Lifecycle:**
@@ -69,9 +69,9 @@ CANCELLED CANCELLED  CANCELLED
 - REVIEWED: equipment config filled (vehicle, implement, water, bar, turbine, nozzle, pressure, gear, pH), ready to print
 - PRINTED: printed for operator, handed to field
 - COMPLETED: operator returned, execution data registered, stock movements created
-- CANCELLED: operation not executed, requires reason. Can create a new ticket for the same schedule/date.
+- CANCELLED: operation not executed, requires reason. New ticket can be created for same schedule/date.
 
-Re-evaluation: editing a COMPLETED ticket does NOT change status. Updates execution data with mandatory reason, adjusts stock movements, all audited.
+Re-evaluation: editing COMPLETED ticket does NOT change status. Updates execution data with mandatory reason, adjusts stock movements, all audited.
 
 ### FieldTicketInput (Insumo da Boleta)
 
@@ -88,19 +88,19 @@ Re-evaluation: editing a COMPLETED ticket does NOT change status. Updates execut
 **Invariants:**
 - dosagePer100L must be > 0
 - executedDosage must be > 0 when provided
-- inputId must reference an existing Input
-- Dosage unit is always the "smaller" unit relative to the Input's unitOfMeasure: kg→g, L→mL, g→g, mL→mL, un→un
+- inputId must reference existing Input
+- Dosage unit always "smaller" unit relative to Input's unitOfMeasure: kg→g, L→mL, g→g, mL→mL, un→un
 
 **Notes:**
-- At creation: `dosagePer100L` is the planned dosage (what should be applied)
+- At creation: `dosagePer100L` is planned dosage (what should be applied)
 - During review: user can add/remove/change inputs
 - During finalization: user fills `executedDosage` with what was actually used
-- The diff between `dosagePer100L` and `executedDosage` provides planned vs executed analysis
+- Diff between `dosagePer100L` and `executedDosage` provides planned vs executed analysis
 
 ## Use Cases
 
 ### CreateFieldTicket (Add Operation to Schedule)
-- **Trigger:** user adds an operation to a schedule from the schedule view or execution panel
+- **Trigger:** user adds operation to schedule from schedule view or execution panel
 - **Input:** scheduleId, date, operationType, inputs (list of { inputId, dosagePer100L })
 - **Rules:** Schedule must exist and not be COMPLETED or CANCELLED. Date must be within Harvest period. At least one input required.
 - **Success:** FieldTicket created with status DRAFT, inputs created
@@ -108,7 +108,7 @@ Re-evaluation: editing a COMPLETED ticket does NOT change status. Updates execut
 - **Events emitted:** FieldTicketCreatedEvent
 
 ### ReviewFieldTicket
-- **Trigger:** user fills equipment configuration on a DRAFT ticket
+- **Trigger:** user fills equipment config on DRAFT ticket
 - **Input:** fieldTicketId, vehicleId, implementId, waterL, bar, turbine, nozzleCount, pressure, gearNumber, gearType, ph, operatorName (optional), input changes (add/remove/update)
 - **Rules:** ticket must be in DRAFT status; vehicleId and implementId must reference active entities
 - **Success:** status changes to REVIEWED
@@ -116,9 +116,9 @@ Re-evaluation: editing a COMPLETED ticket does NOT change status. Updates execut
 - **Events emitted:** FieldTicketReviewedEvent
 
 ### EditFieldTicket
-- **Trigger:** user edits a ticket that is in DRAFT or REVIEWED status
+- **Trigger:** user edits ticket in DRAFT or REVIEWED status
 - **Input:** fieldTicketId, any editable fields (date, operationType, inputs, equipment config)
-- **Rules:** only DRAFT or REVIEWED tickets can be edited freely. If date changes, must be within Harvest period.
+- **Rules:** only DRAFT or REVIEWED tickets can be freely edited. Date changes must be within Harvest period.
 - **Success:** ticket updated (status stays or reverts to DRAFT if critical fields changed)
 - **Errors:** FieldTicketNotFoundError, InvalidStatusTransitionError, OperationDateOutOfRangeError
 - **Events emitted:** FieldTicketUpdatedEvent
@@ -134,29 +134,29 @@ Re-evaluation: editing a COMPLETED ticket does NOT change status. Updates execut
 ### FinalizeFieldTicket
 - **Trigger:** operator returns from field, user registers execution data
 - **Input:** fieldTicketId, startTime, endTime, hourmeterStart, hourmeterEnd, operatorName, executedInputs (inputId + executedDosage for each), plus any field changes (vehicle, implement, water, bar, turbine, nozzle, pressure, gearNumber, gearType, ph)
-- **Rules:** ticket must be in PRINTED status; stock movements created automatically for each input based on executedDosage
+- **Rules:** ticket must be in PRINTED status; stock movements created automatically per input based on executedDosage
 - **Success:** status changes to COMPLETED, stock movements created
 - **Errors:** FieldTicketNotFoundError, InvalidStatusTransitionError
 - **Events emitted:** FieldTicketCompletedEvent → triggers automatic StockMovement creation in Inventory
 
 ### ReEvaluateFieldTicket
-- **Trigger:** user corrects execution data on a COMPLETED ticket
+- **Trigger:** user corrects execution data on COMPLETED ticket
 - **Input:** fieldTicketId, reason (required), updated execution data (any fields including executedInputs)
-- **Rules:** ticket must be in COMPLETED status; reason is mandatory; previous stock movements are reversed and new ones created based on corrected data
+- **Rules:** ticket must be in COMPLETED status; reason mandatory; previous stock movements reversed and new ones created from corrected data
 - **Success:** ticket data updated (status stays COMPLETED), stock movements adjusted
 - **Errors:** FieldTicketNotFoundError, InvalidStatusTransitionError
 - **Events emitted:** FieldTicketReEvaluatedEvent → triggers stock movement reversal + new creation
 
 ### CancelFieldTicket
-- **Trigger:** user cancels a ticket that was not executed
+- **Trigger:** user cancels ticket not executed
 - **Input:** fieldTicketId, cancelReason (required)
-- **Rules:** ticket must NOT be in COMPLETED status; reason is mandatory; a new ticket can be created for the same schedule/date after cancellation
+- **Rules:** ticket must NOT be in COMPLETED status; reason mandatory; new ticket can be created for same schedule/date after cancellation
 - **Success:** status changes to CANCELLED
 - **Errors:** FieldTicketNotFoundError, CannotCancelCompletedTicketError
 - **Events emitted:** FieldTicketCancelledEvent
 
 ### DeleteFieldTicket
-- **Trigger:** user removes a DRAFT ticket (removes operation from schedule)
+- **Trigger:** user removes DRAFT ticket (removes operation from schedule)
 - **Input:** fieldTicketId
 - **Rules:** ticket must be in DRAFT status. Hard delete (removes ticket and inputs).
 - **Errors:** FieldTicketNotFoundError, InvalidStatusTransitionError
@@ -165,13 +165,13 @@ Re-evaluation: editing a COMPLETED ticket does NOT change status. Updates execut
 ### ListFieldTickets
 - **Trigger:** user navigates to field tickets page or execution panel
 - **Input:** pagination params, optional filters (scheduleId, date, fieldId, status, operationType)
-- **Rules:** only return non-cancelled tickets by default (cancelled shown in separate tab)
+- **Rules:** return non-cancelled tickets by default (cancelled shown in separate tab)
 - **Success:** paginated list of FieldTicket entities
 - **Errors:** none
 - **Events emitted:** none
 
 ### FindFieldTicketById
-- **Trigger:** user opens a field ticket detail
+- **Trigger:** user opens field ticket detail
 - **Input:** fieldTicketId
 - **Rules:** none
 - **Success:** FieldTicket entity with inputs, resolved field/harvest/vehicle/implement names
@@ -179,7 +179,7 @@ Re-evaluation: editing a COMPLETED ticket does NOT change status. Updates execut
 - **Events emitted:** none
 
 ### ListFieldTicketAuditLogs
-- **Trigger:** user views audit history for a ticket
+- **Trigger:** user views audit history for ticket
 - **Input:** fieldTicketId, cursor pagination
 - **Rules:** none
 - **Success:** paginated audit log entries
@@ -190,7 +190,7 @@ Re-evaluation: editing a COMPLETED ticket does NOT change status. Updates execut
 
 - **Depends on:** Schedule (scheduleId — grouping entity, provides harvest period validation), Field (fieldId — denormalized), Crop/Harvest (harvestId — for "Dias" calculation and date validation), Fleet (vehicleId, implementId — equipment assignment), Inventory (inputId — for input references)
 - **Emits events consumed by:** Inventory (FieldTicketCompletedEvent → automatic stock exit, FieldTicketReEvaluatedEvent → stock adjustment), Audit (all mutation events)
-- **Responds to QueryBus queries from:** Schedule (FindFieldTicketsByScheduleIdQuery — list operations for a schedule)
+- **Responds to QueryBus queries from:** Schedule (FindFieldTicketsByScheduleIdQuery — list operations for schedule)
 - **QueryBus queries used:** FindActiveVehicleQuery, FindActiveImplementQuery, FindActiveInputQuery, FindHarvestQuery, FindScheduleQuery
 
 ## Authorization
@@ -211,28 +211,28 @@ Re-evaluation: editing a COMPLETED ticket does NOT change status. Updates execut
 
 ## Constraints
 
-- All mutations audited via domain events — every operation records who, what, and when
+- All mutations audited via domain events — every operation records who, what, when
 - Stock movements created automatically on finalization — never manually
 - Stock insufficiency does NOT block finalization — creates negative stock with warning
 - Re-evaluation reverses previous stock movements and creates corrected ones
 - Cancelled tickets preserve full history (never hard deleted)
 - DRAFT tickets can be hard deleted (removes operation from schedule)
-- "Dias" field is calculated: `operationDate - harvest.startDate + 1` (day 1 = startDate)
+- "Dias" field calculated: `operationDate - harvest.startDate + 1` (day 1 = startDate)
 - Dosage always displayed in smaller unit (kg→g, L→mL, g→g, mL→mL, un→un)
 - Dosage is per 100L of water
 
 ## Edge Cases
 
-- User adds operation on a date outside Harvest period → rejected with OperationDateOutOfRangeError
-- User cancels ticket, then creates a new one for the same date/type → allowed
-- User tries to cancel a COMPLETED ticket → reject with CannotCancelCompletedTicketError
-- Finalization with insufficient inventory stock → allow finalization, create stock movement (stock goes negative), emit warning
-- Re-evaluation changes input quantities → reverse old stock movements, create new ones with corrected values
-- User changes dosage during finalization (field reality differs from plan) → fills executedDosage, keeps dosagePer100L as historical snapshot
-- Multiple tickets for same day across multiple fields → each is independent, no cross-ticket validation
-- Schedule is deleted while tickets exist in DRAFT → cascade delete of DRAFT tickets
-- Schedule is deleted while tickets are PRINTED/COMPLETED → soft delete schedule, tickets preserved
-- Print layout: 6 tickets per A4 page in landscape orientation
+- Operation added outside Harvest period → rejected with OperationDateOutOfRangeError
+- Ticket cancelled, new one created for same date/type → allowed
+- Cancel COMPLETED ticket → reject with CannotCancelCompletedTicketError
+- Finalization with insufficient inventory stock → allow, create stock movement (stock goes negative), emit warning
+- Re-evaluation changes input quantities → reverse old stock movements, create new with corrected values
+- Dosage changed during finalization (field reality differs from plan) → fills executedDosage, keeps dosagePer100L as historical snapshot
+- Multiple tickets same day across multiple fields → each independent, no cross-ticket validation
+- Schedule deleted while DRAFT tickets exist → cascade delete DRAFT tickets
+- Schedule deleted while PRINTED/COMPLETED tickets exist → soft delete schedule, tickets preserved
+- Print layout: 6 tickets per A4 landscape
 
 ## Printing Layout
 
@@ -245,15 +245,15 @@ Re-evaluation: editing a COMPLETED ticket does NOT change status. Updates execut
 
 ## Execution Panel (Painel de Execução)
 
-The execution panel is **workflow-based, not date-based**. The manager's question is "what needs my attention RIGHT NOW?" — not "what happened on this date?".
+Panel is **workflow-based, not date-based**. Manager's question: "what needs attention RIGHT NOW?" — not "what happened on this date?".
 
 ### Layout — Three Sections
 
 **Section 1: "Aguardando Finalização" (top)**
 - Horizontal card list of ALL PRINTED tickets not yet finalized (any date — typically yesterday's)
-- Each card shows: field, operation type, date (so manager knows "this is from yesterday"), inputs summary
+- Each card shows: field, operation type, date, inputs summary
 - Action: click to finalize → opens finalization flow
-- When empty: section is hidden
+- When empty: section hidden
 
 **Section 2: "Operações de Hoje" (below)**
 - Stage columns: **Rascunho → Revisada → Concluída**
@@ -263,7 +263,7 @@ The execution panel is **workflow-based, not date-based**. The manager's questio
 - Note: **PRINTED column does NOT appear here** — printed tickets go to Section 1
 
 **Section 3: "Outros Dias" (bottom, compact)**
-- Compact rows for other days of the week
+- Compact rows for other days of week
 - Past days: show summary (completed count, pending count)
 - Future days: show operation count (planning preview)
 - Clickable to expand details
@@ -297,5 +297,5 @@ Operator goes to field... returns ~8 PM, keeps tickets overnight
 
 ## Open Questions
 
-- Operator: free text field for now — will become Employee reference in post-MVP
+- Operator: free text for now — will become Employee reference post-MVP
 - Print layout exact dimensions and spacing — to be refined after first visual implementation

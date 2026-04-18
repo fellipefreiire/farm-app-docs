@@ -1,17 +1,17 @@
 # Claude Boilerplate
 
-Production-ready boilerplate for building full-stack applications with **NestJS** (backend) and **Next.js** (frontend), designed to work with **Claude Code** as an AI-powered development assistant.
+Production-ready boilerplate for full-stack apps with **NestJS** (backend) and **Next.js** (frontend), designed for **Claude Code** as AI dev assistant.
 
 ## What is this?
 
-This is an opinionated project template that combines:
+Opinionated project template combining:
 
-- **Clean Architecture + DDD** — Domain-driven design with clear layer separation (domain → application → infrastructure)
-- **TDD workflow** — Test-first development enforced by coding patterns and AI skills
+- **Clean Architecture + DDD** — Domain-driven design, clear layer separation (domain → application → infrastructure)
+- **TDD workflow** — Test-first dev enforced by coding patterns and AI skills
 - **AI-assisted development** — 6 farm-app skills + superpowers plugin for workflow orchestration
-- **Comprehensive documentation** — Coding patterns, business rules, and architectural decisions versioned alongside code
+- **Comprehensive documentation** — Coding patterns, business rules, architectural decisions versioned with code
 
-The boilerplate comes with a fully functional **User** domain (authentication, authorization, CRUD) and **Audit Log** domain (event-driven activity tracking) as working examples.
+Ships with functional **User** domain (auth, authorization, CRUD) and **Audit Log** domain (event-driven activity tracking) as working examples.
 
 ## Stack
 
@@ -70,7 +70,7 @@ git init
 
 ### 2. Configure the boilerplate
 
-Open `CLAUDE.md` and replace the configuration variables at the top:
+Open `CLAUDE.md`, replace config vars at top:
 
 ```
 DOCS_REPO              = your-org/my-project-docs
@@ -82,7 +82,7 @@ PACKAGE_MANAGER        = pnpm             ← pnpm | npm | yarn | bun
 
 ### 3. Verify the symlink
 
-The `.claude` symlink should already point to `docs/.claude`. If not:
+`.claude` symlink should point to `docs/.claude`. If not:
 
 ```bash
 ln -s ./docs/.claude .claude
@@ -90,7 +90,7 @@ ln -s ./docs/.claude .claude
 
 ### 4. Install dependencies
 
-Replace `pnpm` with your chosen package manager throughout:
+Replace `pnpm` with chosen package manager throughout:
 
 ```bash
 cd backend && pnpm install
@@ -99,7 +99,7 @@ cd ../frontend && pnpm install
 
 ### 5. Generate JWT RS256 keys
 
-The backend uses RS256 (asymmetric) signing for JWT tokens:
+Backend uses RS256 (asymmetric) signing for JWT tokens:
 
 ```bash
 # Generate key pair
@@ -114,7 +114,7 @@ cat public.pem | base64 -w 0     # copy output → JWT_PUBLIC_KEY
 rm private.pem public.pem
 ```
 
-> **Never commit `.pem` files.** For production, use a secrets manager.
+> **Never commit `.pem` files.** Use secrets manager in production.
 
 ### 6. Set up environment variables
 
@@ -125,8 +125,8 @@ cp frontend/.env.example frontend/.env
 
 Edit `backend/.env`:
 - `DATABASE_URL` — PostgreSQL connection string
-- `DATABASE_USERNAME` / `DATABASE_PASSWORD` / `DATABASE_NAME` — used by `docker-compose.yml` to create the PostgreSQL container
-- `JWT_PRIVATE_KEY` / `JWT_PUBLIC_KEY` — paste the base64 keys from step 5
+- `DATABASE_USERNAME` / `DATABASE_PASSWORD` / `DATABASE_NAME` — used by `docker-compose.yml` to create PostgreSQL container
+- `JWT_PRIVATE_KEY` / `JWT_PUBLIC_KEY` — paste base64 keys from step 5
 
 Edit `frontend/.env`:
 - `NEXT_PUBLIC_API_URL` — Backend URL (default: `http://localhost:3333`)
@@ -138,7 +138,7 @@ Edit `frontend/.env`:
 cd backend && docker compose up -d
 ```
 
-This starts PostgreSQL and Redis containers.
+Starts PostgreSQL and Redis containers.
 
 ### 8. Set up the database
 
@@ -151,7 +151,7 @@ pnpm prisma db seed   # creates default admin user (admin@example.com / 123456)
 
 ### 9. Update frontend cookie prefix
 
-Edit `frontend/src/shared/constants/cookies.ts` and replace the prefix with your project name:
+Edit `frontend/src/shared/constants/cookies.ts`, replace prefix with project name:
 
 ```ts
 const PROJECT_PREFIX = 'my-project' // ← your project name here
@@ -167,7 +167,7 @@ cd backend && pnpm dev
 cd frontend && pnpm dev
 ```
 
-Backend runs on `http://localhost:3333`, frontend on `http://localhost:3000`.
+Backend on `http://localhost:3333`, frontend on `http://localhost:3000`.
 
 ## Running tests
 
@@ -185,11 +185,11 @@ cd frontend && pnpm test          # unit tests (vitest)
 cd frontend && pnpm test:e2e      # E2E tests (playwright + MSW, no backend needed)
 ```
 
-Frontend E2E tests use **MSW** to mock backend responses. They don't require a running backend — the Next.js server intercepts API requests via `instrumentation.ts` when `NODE_ENV=test`.
+Frontend E2E uses **MSW** to mock backend responses. No running backend needed — Next.js server intercepts API requests via `instrumentation.ts` when `NODE_ENV=test`.
 
 ## Using with Claude Code
 
-This boilerplate is designed to work with [Claude Code](https://claude.com/claude-code). Run it from the project root:
+Boilerplate designed for [Claude Code](https://claude.com/claude-code). Run from project root:
 
 ```bash
 claude --add-dir ./backend --add-dir ./frontend
@@ -202,7 +202,7 @@ claude --add-dir ./backend --add-dir ./frontend
 | Skill | When to use |
 |-------|-------------|
 | `/project-setup` | Initial project configuration |
-| `/domain-discovery` | Define a new domain's rules and entities |
+| `/domain-discovery` | Define new domain's rules and entities |
 | `/flow-discovery` | Map user journeys and interactions |
 | `/migrate` | Major dependency updates with classification |
 | `/health-check` | Full project health evaluation |
@@ -210,16 +210,16 @@ claude --add-dir ./backend --add-dir ./frontend
 
 **Superpowers skills** (workflow engine — provided by plugin):
 
-Planning, implementing (TDD), debugging, code review, branching, and git operations are all handled by the `superpowers` plugin. See `CLAUDE.md` for details.
+Planning, implementing (TDD), debugging, code review, branching, git ops — all handled by `superpowers` plugin. See `CLAUDE.md` for details.
 
 ### Workflow
 
-1. Fill `docs/product.md` with your product context
-2. Fill `docs/architecture.md` with your system design
+1. Fill `docs/product.md` with product context
+2. Fill `docs/architecture.md` with system design
 3. Use `/domain-discovery` to define each domain's rules
 4. Use `/flow-discovery` to map user journeys
-5. Claude follows TDD (test first), coding patterns, and creates PRs targeting `development`
-6. Use `/finish` when implementation is complete
+5. Claude follows TDD (test first), coding patterns, creates PRs targeting `development`
+6. Use `/finish` when implementation complete
 
 ## What's included out of the box
 
@@ -248,13 +248,13 @@ Planning, implementing (TDD), debugging, code review, branching, and git operati
 
 ## Coding patterns
 
-The `docs/coding-patterns/` directory contains 101 documented pattern files organized by layer and variant:
+`docs/coding-patterns/` has 101 documented pattern files organized by layer and variant:
 
 **Backend:** entity, use-case (10 variants), repository (8 variants), controller (15 variants), events, mapper, presenter, tests (6 variants), auth, logging, env-validation, cache, decorator, health-check, mutation-testing, rate-limit, shared-utils, query-bus, domain-organization
 
 **Frontend:** component (7 variants), page (9 variants), action, schema, api, api-route, store, hook, design-system, accessibility, e2e-test (11 variants), unit-test, error-boundary, loading, shared (8 variants), date-handling, domain-organization, audit-integration
 
-Each pattern includes file location, code examples, rules, and anti-patterns. Claude reads these before writing any code.
+Each pattern has file location, code examples, rules, anti-patterns. Claude reads these before writing code.
 
 ## License
 

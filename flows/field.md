@@ -10,7 +10,7 @@
 
 **Happy path:**
 1. User clicks "Novo talhão" → form opens
-2. User fills: name, area (hectares), location/description → submits
+2. User fills: name, area (hectares) → submits
 3. System creates field → success toast → list refreshes
 
 **Error cases:**
@@ -36,7 +36,9 @@
 
 **Delete:**
 1. User clicks delete on a field → confirmation dialog
-2. System soft-deletes field → success toast → list refreshes → audit log records deletion
+2. System deletes field → success toast → list refreshes → audit log records deletion
+
+> Delete behavior: hard delete if no active references; soft delete otherwise. See rules/field.md.
 
 **Error cases:**
 - Duplicate name on edit → inline error: "Talhão já cadastrado com esse nome"

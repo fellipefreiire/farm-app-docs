@@ -1,6 +1,6 @@
 # Entity Pattern
 
-Entities are the core of the domain layer. They encapsulate identity, state, and business invariants. They must never import infrastructure types.
+Entities = core of domain layer. Encapsulate identity, state, business invariants. Never import infrastructure types.
 
 ---
 
@@ -10,13 +10,13 @@ Entities are the core of the domain layer. They encapsulate identity, state, and
 src/domain/<domain>/enterprise/entities/<Entity>.ts
 ```
 
-> **Multi-entity domains:** When the domain uses subdomain folders (see `domain-organization.md`), entities move under the subdomain: `src/domain/<domain>/<subdomain>/enterprise/entities/<Entity>.ts`.
+> **Multi-entity domains:** When domain uses subdomain folders (see `domain-organization.md`), entities move under subdomain: `src/domain/<domain>/<subdomain>/enterprise/entities/<Entity>.ts`.
 
 ---
 
 ## Base classes (src/core/)
 
-The project uses three base classes. Choose the right one:
+Three base classes. Choose right one:
 
 | Class | When to use |
 |-------|------------|
@@ -172,11 +172,11 @@ export class <Entity> extends AggregateRoot<<Entity>Props> {
 
 ## Rules
 
-- Extend `AggregateRoot<Props>` if the entity emits domain events (most cases)
-- Extend `Entity<Props>` only if the entity never emits events
+- Extend `AggregateRoot<Props>` if entity emits domain events (most cases)
+- Extend `Entity<Props>` only if entity never emits events
 - All props accessed through **getters only** — `props` is protected, never exposed
-- `create()` is used by use cases — always requires `actorId`, always emits `<Entity>CreatedEvent`
-- `reconstitute()` is used by mappers only — no `actorId`, never emits events
+- `create()` used by use cases — always requires `actorId`, always emits `<Entity>CreatedEvent`
+- `reconstitute()` used by mappers only — no `actorId`, never emits events
 - Business mutations emit domain events with `actorId` and `previousData` for audit trail
 - Always call `touch()` on any mutation to update `updatedAt`
 - Always use `type` for Props — never `interface` (prevents declaration merging and accidental mutation of typings)
@@ -187,7 +187,7 @@ export class <Entity> extends AggregateRoot<<Entity>Props> {
 
 ## Value Objects
 
-For attributes with their own validation rules, extract a Value Object:
+For attributes with own validation rules, extract Value Object:
 
 ```ts
 // src/domain/<domain>/enterprise/value-objects/<ValueObject>.ts
@@ -215,7 +215,7 @@ export class <ValueObject> extends ValueObject<<ValueObject>Props> {
 }
 ```
 
-Value objects are **immutable** — no setters, no mutation methods. Equality is structural (by value), not by identity.
+Value objects are **immutable** — no setters, no mutation methods. Equality structural (by value), not by identity.
 
 ---
 
@@ -232,9 +232,9 @@ export type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>
 
 ## Multi-entity domains
 
-When a domain has more than one entity, model the relationship with a **join entity** and a **WatchedList**.
+When domain has more than one entity, model relationship with **join entity** + **WatchedList**.
 
-**Join entity** — represents the relationship, extends `Entity<Props>` (not AggregateRoot):
+**Join entity** — represents relationship, extends `Entity<Props>` (not AggregateRoot):
 
 ```ts
 // src/domain/<domain>/enterprise/entities/<Parent><Child>.ts
@@ -256,9 +256,9 @@ export class <Parent><Child> extends Entity<<Parent><Child>Props> {
 }
 ```
 
-**WatchedList** — tracks additions and removals without replacing the full collection.
+**WatchedList** — tracks additions and removals without replacing full collection.
 
-> The WatchedList is parameterized over the **join entity** (e.g. `ProductCategory`), not the target entity (e.g. `Category`). The join entity holds FKs to both parent and target, and is what gets created/deleted in the join table.
+> WatchedList is parameterized over **join entity** (e.g. `ProductCategory`), not target entity (e.g. `Category`). Join entity holds FKs to both parent and target, and is what gets created/deleted in join table.
 
 ```ts
 // src/domain/<domain>/enterprise/entities/<Parent><Child>List.ts
@@ -273,7 +273,7 @@ export class <Parent><Child>List extends WatchedList<<Child>> {
 }
 ```
 
-**Aggregate root holds the WatchedList as a prop:**
+**Aggregate root holds WatchedList as prop:**
 
 ```ts
 export type <Parent>Props = {
@@ -305,17 +305,17 @@ export class <Parent> extends AggregateRoot<<Parent>Props> {
 ```
 
 **Rules:**
-- The join entity extends `Entity`, not `AggregateRoot` — it has no domain events
-- The WatchedList tracks `getNewItems()` and `getRemovedItems()` — the repository uses these to upsert/delete efficiently
-- Related entities are always accessed through the aggregate root — never fetched independently by a use case that already has the aggregate
-- `compareItems()` should compare by identity (`a.id.equals(b.id)`) unless structural equality is needed
-- **Join entities never have FK setters** — the parent ID must be pre-generated with `new UniqueEntityID()` in the use case and passed to children at creation time
+- Join entity extends `Entity`, not `AggregateRoot` — no domain events
+- WatchedList tracks `getNewItems()` and `getRemovedItems()` — repository uses these to upsert/delete efficiently
+- Related entities accessed through aggregate root only — never fetched independently by use case that already has aggregate
+- `compareItems()` compare by identity (`a.id.equals(b.id)`) unless structural equality needed
+- **Join entities never have FK setters** — parent ID must be pre-generated with `new UniqueEntityID()` in use case and passed to children at creation
 
 ---
 
 ## Delete patterns
 
-Three distinct concepts — which apply to a domain must be defined in `docs/rules/<domain>.md`:
+Three concepts — which apply must be defined in `docs/rules/<domain>.md`:
 
 | Pattern | When | Field | Use case behavior |
 |---------|------|-------|-------------------|
@@ -323,17 +323,17 @@ Three distinct concepts — which apply to a domain must be defined in `docs/rul
 | **Soft delete** | Domain interactions exist (orders, references) | `deletedAt?: Date` | `entity.softDelete(actorId)` + `repository.save(entity)` |
 | **Toggle active** | Entity can be disabled and re-enabled | `active: boolean` | `entity.toggleActive(actorId)` + `repository.save(entity)` |
 
-**Hard delete vs soft delete decision** belongs in the delete use case, informed by domain rules. The use case checks for domain-specific interactions (external references, child records from other domains) and decides:
+Hard delete vs soft delete decision belongs in delete use case, informed by domain rules. Use case checks for domain-specific interactions (external references, child records from other domains) and decides:
 - No interactions → hard delete
 - Has interactions → soft delete
 
-What counts as "an interaction" is domain-specific and must be documented in `docs/rules/<domain>.md`.
+What counts as "an interaction" is domain-specific — document in `docs/rules/<domain>.md`.
 
-**Soft-deleted entities** are excluded from all `list()` queries by default. `findById()` returns the entity regardless of soft-delete status (needed for delete and audit). Use `findActiveById()` for standard reads that should exclude soft-deleted records.
+**Soft-deleted entities** excluded from all `list()` queries by default. `findById()` returns entity regardless of soft-delete status (needed for delete and audit). Use `findActiveById()` for standard reads that exclude soft-deleted records.
 
-**Hard delete and audit:** hard deletes are intentionally not audited via domain events — the entity is permanently removed and no side effects are needed. If audit is required for all deletions, the domain should use soft delete exclusively.
+**Hard delete and audit:** hard deletes not audited via domain events — entity permanently removed, no side effects needed. If audit required for all deletions, use soft delete exclusively.
 
-**Cascade on delete:** own children (e.g. prices, stock) are deleted together with the parent via `onDelete: Cascade` in the Prisma schema — no application code needed. External references (e.g. orders referencing a product) block deletion and return a domain error checked in the use case.
+**Cascade on delete:** own children (e.g. prices, stock) deleted with parent via `onDelete: Cascade` in Prisma schema — no application code needed. External references (e.g. orders referencing product) block deletion and return domain error checked in use case.
 
 ---
 

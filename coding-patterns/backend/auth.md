@@ -1,8 +1,8 @@
 # Auth Pattern
 
-JWT authentication (RS256) + CASL authorization (MongoAbility) + CSRF protection. All endpoints are private by default — `@Public()` is the exception, not the rule.
+JWT auth (RS256) + CASL authorization (MongoAbility) + CSRF protection. All endpoints private by default — `@Public()` is exception, not rule.
 
-> Controllers use auth decorators — see `controller.md` for full endpoint examples. This file covers the auth infrastructure itself.
+> Controllers use auth decorators — see `controller.md` for full endpoint examples. This file covers auth infrastructure.
 
 ---
 
@@ -30,7 +30,7 @@ src/infra/auth/decorators/public.decorator.ts        ← marks endpoint as publi
 
 ## JWT strategy
 
-RS256 asymmetric signing. The strategy uses the **public key** to verify tokens. The private key is only used by `TokenService` when signing.
+RS256 asymmetric signing. Strategy uses **public key** to verify tokens. Private key only used by `TokenService` when signing.
 
 ```ts
 // src/infra/auth/jwt/jwt.strategy.ts
@@ -91,13 +91,13 @@ export abstract class TokenRepository {
 }
 ```
 
-`TokenService` implements this using `@nestjs/jwt` with the RS256 private key. The implementation lives in `src/infra/auth/jwt/token.service.ts`.
+`TokenService` implements this using `@nestjs/jwt` with RS256 private key. Implementation lives in `src/infra/auth/jwt/token.service.ts`.
 
 ---
 
 ## RefreshTokenRepository
 
-Abstract contract for refresh token lifecycle management. Backed by Redis in production.
+Abstract contract for refresh token lifecycle. Backed by Redis in production.
 
 ```ts
 // src/infra/auth/jwt/refresh-token-repository.ts
@@ -110,13 +110,13 @@ export abstract class RefreshTokenRepository {
 }
 ```
 
-`RefreshTokenService` implements this using Redis. The implementation lives in `src/infra/auth/jwt/refresh-token.service.ts`.
+`RefreshTokenService` implements this using Redis. Implementation lives in `src/infra/auth/jwt/refresh-token.service.ts`.
 
 ---
 
 ## JwtModule
 
-Wires RS256 config, Passport, and token abstractions together.
+Wires RS256 config, Passport, token abstractions together.
 
 ```ts
 // src/infra/auth/jwt/jwt.module.ts
@@ -143,7 +143,7 @@ export class JwtModule {}
 
 ## CSRF guard
 
-Protects state-changing endpoints that use cookies (e.g., refresh token rotation). Compares the `x-csrf-token` header against the `csrfToken` cookie.
+Protects state-changing endpoints using cookies (e.g. refresh token rotation). Compares `x-csrf-token` header against `csrfToken` cookie.
 
 ```ts
 // src/infra/auth/guards/csrf.guard.ts
@@ -171,7 +171,7 @@ export class CsrfGuard implements CanActivate {
 
 ## CASL ability factory
 
-Uses `MongoAbility` for subject-based permission checks. Subjects are defined with Zod in `src/infra/auth/casl/subjects/`, and role-based permissions are defined in `src/infra/auth/casl/permissions/`.
+Uses `MongoAbility` for subject-based permission checks. Subjects defined with Zod in `src/infra/auth/casl/subjects/`, role-based permissions in `src/infra/auth/casl/permissions/`.
 
 ```ts
 // src/infra/auth/casl/casl-ability.factory.ts
@@ -278,7 +278,7 @@ export const Public = () => SetMetadata(IS_PUBLIC_KEY, true)
 
 ## Usage in controllers
 
-Use inline policy handlers with `@CheckPolicies`:
+Inline policy handlers with `@CheckPolicies`:
 
 ```ts
 @Controller({ path: 'orders', version: '1' })
@@ -299,7 +299,7 @@ export class CreateOrderController {
 }
 ```
 
-For public endpoints:
+Public endpoints:
 
 ```ts
 @Controller({ path: 'auth', version: '1' })
@@ -312,7 +312,7 @@ export class SignInController {
 }
 ```
 
-For refresh token endpoints (CSRF-protected):
+Refresh token endpoints (CSRF-protected):
 
 ```ts
 @Controller({ path: 'auth', version: '1' })
@@ -330,7 +330,7 @@ export class RefreshTokenController {
 
 ## Resource-level authorization
 
-When a user should only access their own resources:
+User should only access own resources:
 
 ```ts
 // In the use case — check ownership
@@ -344,27 +344,27 @@ async execute({ entityId, actorId }: Input) {
 }
 ```
 
-Ownership checks live in use cases, not in guards. Guards handle role-based access; use cases handle resource-level access.
+Ownership checks live in use cases, not guards. Guards handle role-based access; use cases handle resource-level access.
 
 ---
 
 ## Rules
 
-- `JwtAuthGuard` is applied globally — every endpoint requires a token unless decorated with `@Public()`
-- `@Public()` only when explicitly required by domain rules — never assume
-- `@UseGuards(CaslAbilityGuard)` on every controller that needs action-level authorization
-- `@CheckPolicies(handler)` on every endpoint that needs policy checks — prefer inline handlers: `@CheckPolicies((ability) => ability.can('create', 'Order'))`
+- `JwtAuthGuard` applied globally — every endpoint requires token unless `@Public()`
+- `@Public()` only when domain rules require — never assume
+- `@UseGuards(CaslAbilityGuard)` on every controller needing action-level authorization
+- `@CheckPolicies(handler)` on every endpoint needing policy checks — prefer inline: `@CheckPolicies((ability) => ability.can('create', 'Order'))`
 - Always pass `actorId: currentUser.sub` to mutating use cases
-- Ownership checks live in use cases, not in guards
-- Token payload is validated with Zod — never trust raw JWT claims
-- Roles are defined in the CASL ability factory — one place to manage permissions
-- RS256 asymmetric key pair — `JWT_PRIVATE_KEY` and `JWT_PUBLIC_KEY` are base64-encoded environment variables
+- Ownership checks live in use cases, not guards
+- Token payload validated with Zod — never trust raw JWT claims
+- Roles defined in CASL ability factory — one place to manage permissions
+- RS256 asymmetric key pair — `JWT_PRIVATE_KEY` and `JWT_PUBLIC_KEY` are base64-encoded env vars
 - `TokenPayload` includes `jti` (JWT ID) — mandatory for token revocation and refresh token rotation
-- Refresh token rotation — the old refresh token is revoked every time a new token pair is issued
-- CSRF guard is required on the refresh token endpoint (and any endpoint that reads tokens from cookies)
-- Use cases depend on `TokenRepository` and `RefreshTokenRepository` abstractions, never on `JwtService` directly
-- Subjects for CASL are defined with Zod in `src/infra/auth/casl/subjects/`
-- Role-based permissions are defined in `src/infra/auth/casl/permissions/`
+- Refresh token rotation — old refresh token revoked every time new token pair issued
+- CSRF guard required on refresh token endpoint (and any endpoint reading tokens from cookies)
+- Use cases depend on `TokenRepository` and `RefreshTokenRepository` abstractions, never `JwtService` directly
+- CASL subjects defined with Zod in `src/infra/auth/casl/subjects/`
+- Role-based permissions defined in `src/infra/auth/casl/permissions/`
 
 ---
 
@@ -412,11 +412,4 @@ async handle() { ... }  // must add @UseGuards(CsrfGuard)
 // WRONG: using HS256 symmetric secret
 super({ secretOrKey: process.env.JWT_SECRET })  // use RS256 with public key
 
-// WRONG: using PureAbility instead of MongoAbility
-const { can, build } = new AbilityBuilder<AppAbility>(PureAbility)
-// use: new AbilityBuilder(createAppAbility) with MongoAbility
-
-// WRONG: calling createForUser instead of defineAbilityFor
-const ability = this.caslAbilityFactory.createForUser(user)
-// use: this.caslAbilityFactory.defineAbilityFor(user)
 ```

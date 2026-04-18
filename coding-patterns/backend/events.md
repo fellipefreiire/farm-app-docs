@@ -1,8 +1,8 @@
 # Events Pattern
 
-Domain events are the fire-and-forget mechanism for cross-domain side effects. The entity emits the event; subscribers react to it in separate modules.
+Domain events = fire-and-forget for cross-domain side effects. Entity emits; subscribers react in separate modules.
 
-> **DomainEvents vs QueryBus:** DomainEvents are fire-and-forget (one-way, no return value) — used for side effects after mutations. QueryBus is request/reply (returns data) — used when a use case needs to read data from another domain. See `query-bus.md` for the full QueryBus pattern.
+> **DomainEvents vs QueryBus:** DomainEvents fire-and-forget (one-way, no return) — side effects after mutations. QueryBus request/reply (returns data) — when use case needs data from another domain. See `query-bus.md` for full QueryBus pattern.
 
 ---
 
@@ -14,7 +14,7 @@ src/domain/<reacting-domain>/application/subscribers/<entity>/on-<entity>-<actio
 src/infra/events/<domain>/<domain>-events.module.ts                  ← NestJS wiring
 ```
 
-> **Multi-entity domains:** When the domain uses subdomain folders (see `domain-organization.md`), events move under the subdomain: `src/domain/<domain>/<subdomain>/enterprise/events/`. The infra events module stays flat.
+> **Multi-entity domains:** When domain uses subdomain folders (see `domain-organization.md`), events move under subdomain: `src/domain/<domain>/<subdomain>/enterprise/events/`. Infra events module stays flat.
 
 ---
 
@@ -43,7 +43,7 @@ export class <Entity><Action>Event implements DomainEvent {
 }
 ```
 
-For update events, include `previousData` for audit trail:
+Update events include `previousData` for audit trail:
 
 ```ts
 export class <Entity>UpdatedEvent implements DomainEvent {
@@ -129,7 +129,7 @@ export class On<Entity><Action> implements EventHandler {
 }
 ```
 
-For update subscribers, pass `previousData` in `changes`:
+Update subscribers pass `previousData` in `changes`:
 
 ```ts
 async handle(event: <Entity>UpdatedEvent): Promise<void> {
@@ -162,7 +162,7 @@ async handle(event: <Entity>UpdatedEvent): Promise<void> {
 
 ## 2b. Subscriber with domain enrichment (resolving names at write time)
 
-When a created event carries foreign key IDs (e.g. `cropTypeId` on a variety), the subscriber resolves them to human-readable names before storing the audit log. This makes the audit data self-contained — the read path doesn't need to re-resolve historical IDs.
+When created event carries FK IDs (e.g. `cropTypeId` on variety), subscriber resolves to human-readable names before storing audit log. Makes audit data self-contained — read path needn't re-resolve historical IDs.
 
 ```ts
 @Injectable()
@@ -210,11 +210,11 @@ export class On<Entity>Created implements EventHandler {
 }
 ```
 
-**Rules for enrichment:**
-- Always store the raw ID field (`cropTypeId`) alongside the resolved name field (`cropType: { from: null, to: "Soja" }`)
+**Enrichment rules:**
+- Always store raw ID field (`cropTypeId`) alongside resolved name field (`cropType: { from: null, to: "Soja" }`)
 - Use `findById` for single lookups (created events have one value per FK)
-- The resolved name is stored as a `{ from, to }` field — consistent with update events
-- If resolution fails (entity deleted), store `null` — never block the audit log creation
+- Resolved name stored as `{ from, to }` — consistent with update events
+- Resolution fails (entity deleted) → store `null` — never block audit log creation
 
 ---
 
@@ -252,33 +252,33 @@ export class <Domain>EventsModule {}
 ## How dispatch works
 
 1. Entity method calls `this.addDomainEvent(new <Entity><Action>Event(this, actorId))`
-2. `AggregateRoot.addDomainEvent()` queues the event and marks the aggregate for dispatch
+2. `AggregateRoot.addDomainEvent()` queues event, marks aggregate for dispatch
 3. Repository calls `DomainEvents.dispatchEventsForAggregate(entity.id)` after `create()` or `save()`
-4. `DomainEvents` finds all registered handlers for that event class name and calls them
-5. Subscriber `handle()` executes the side effect (e.g. audit log)
+4. `DomainEvents` finds all registered handlers for that event class name, calls them
+5. Subscriber `handle()` executes side effect (e.g. audit log)
 
 ---
 
 ## Rules
 
-- Events are emitted by the entity — never by the use case or controller
+- Events emitted by entity — never by use case or controller
 - Events carry `actorId` for audit trail
-- Update events carry `previousData` — the state before the change
-- Subscribers live in the **application layer** of the domain that reacts (usually `audit-log`)
-- The events module lives in `src/infra/events/<domain>/` — this is the NestJS wiring layer
-- The `<domain>` in `src/infra/events/<domain>/` refers to the **emitting** domain. Subscribers imported live in the **reacting** domain.
-- Each subscriber registers itself in `setupSubscriptions()` in the constructor
+- Update events carry `previousData` — state before change
+- Subscribers live in **application layer** of reacting domain (usually `audit-log`)
+- Events module lives in `src/infra/events/<domain>/` — NestJS wiring layer
+- `<domain>` in `src/infra/events/<domain>/` = **emitting** domain. Imported subscribers live in **reacting** domain.
+- Each subscriber registers in `setupSubscriptions()` in constructor
 - Subscribers implement `EventHandler` interface
-- `DomainEvents.register()` uses the event class **name** as the key — never a string literal
-- Never call a use case from within another use case to react to events — use subscribers
-- **Always wrap `handle()` in try/catch** — subscribers are fire-and-forget. A failure must never roll back the original operation
+- `DomainEvents.register()` uses event class **name** as key — never string literal
+- Never call use case from within another use case to react to events — use subscribers
+- **Always wrap `handle()` in try/catch** — subscribers fire-and-forget. Failure must never roll back original operation
 - **Always log errors in `handle()`** using NestJS `Logger` — never swallow silently, never rethrow
-- **Hard deletes do not emit events** — `repository.delete()` permanently removes the entity without dispatching. Only soft deletes (`entity.softDelete()` + `repository.save()`) emit `<Entity>DeletedEvent`. If a domain requires audit for all deletions, use soft delete exclusively
-- **Every new audit subscriber requires frontend translations** — when adding a new `action` string (e.g., `'input:created'`), you must also add translations in three frontend files (see checklist below)
+- **Hard deletes don't emit events** — `repository.delete()` removes entity without dispatching. Only soft deletes (`entity.softDelete()` + `repository.save()`) emit `<Entity>DeletedEvent`. Domains requiring audit for all deletions must use soft delete exclusively
+- **Every new audit subscriber requires frontend translations** — when adding new `action` string (e.g., `'input:created'`), add translations in three frontend files (see checklist below)
 
 ### Audit event translation checklist
 
-When creating audit subscribers for a new domain, **all three files must be updated** with translations for every `action` string the subscribers produce:
+When creating audit subscribers for new domain, **all three files must be updated** with translations for every `action` string subscribers produce:
 
 | File | What to add |
 |------|-------------|
@@ -288,7 +288,7 @@ When creating audit subscribers for a new domain, **all three files must be upda
 
 **Action string format:** `<entity>:<verb>` — e.g., `category:created`, `input:status-changed`, `stock-movement:cancelled`
 
-**Without these translations, audit logs display raw English event keys like `input:created` instead of `Insumo criado`.**
+**Without these translations, audit logs show raw English event keys like `input:created` instead of `Insumo criado`.**
 
 ---
 

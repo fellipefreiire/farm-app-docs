@@ -277,5 +277,5 @@ None — all attributes are primitive types for now.
 ## Resolved Questions
 
 - **PLANNED → ACTIVE transition:** Automatic — driven by ScheduleActivatedEvent when a Schedule is activated. No manual activation endpoint.
-- **Harvest cancellation cascading:** Yes — cancelling a harvest automatically cancels its schedules via domain event (HarvestCancelledEvent). All records are preserved (soft delete) for audit trail and reports.
-- **Schedule cancelled → Harvest reverts:** When a Schedule is cancelled, the Harvest is cancelled as well. A new Harvest (and its auto-created Schedule) must be created if operations need to continue on the field.
+- **Harvest cancellation cascading:** Yes — cancelling a harvest automatically cancels its dependent schedules via domain event (HarvestCancelledEvent). Direction is one-way: Harvest → Schedule. All records are preserved (soft delete) for audit trail and reports.
+- **Schedule cancellation does NOT cascade to Harvest:** Cancelling a Schedule does not affect Harvest status. Only a Harvest cancellation (HarvestCancelledEvent) triggers cascading cancellation of dependent schedules.

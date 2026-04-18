@@ -105,7 +105,6 @@ export * from './ui/<entity>-actions-popover'
 - After deletion, redirect to the listing page
 - Columns are defined in a separate file from the table component
 - Every `components/` directory must have an `index.ts` barrel export
-- All user-facing text in Portuguese (pt-BR)
 
 ---
 
@@ -135,14 +134,6 @@ if (res.ok) { closeDialog() }
 // ❌ no toast feedback on mutation
 await createAction(data)
 // ✅ const toastId = toast.loading('Criando...'); ... renderToast(...)
-
-// ❌ popover trigger without size-7
-<Button variant="outline" size="icon">
-// ✅ <Button variant="outline" size="icon" className="size-7">
-
-// ❌ showEdit=true on detail page where edit button exists
-<ActionsPopover entity={entity} />
-// ✅ <ActionsPopover entity={entity} showEdit={false} />
 
 // ❌ input type="number" for numeric fields
 <InputField type="number" name="year" ... />

@@ -40,7 +40,7 @@ None — all attributes are primitives with simple validation.
 ## Use Cases
 
 ### CreateField
-- **Trigger:** user action (admin or manager)
+- **Trigger:** user action (ADMIN or MANAGER)
 - **Input:** name, area
 - **Rules:** name must be unique, area > 0, status defaults to ACTIVE
 - **Success:** created Field entity
@@ -48,7 +48,7 @@ None — all attributes are primitives with simple validation.
 - **Events emitted:** FieldCreatedEvent
 
 ### EditField
-- **Trigger:** user action (admin or manager)
+- **Trigger:** user action (ADMIN or MANAGER)
 - **Input:** fieldId, name?, area?
 - **Rules:** if name changed, must remain unique; if area changed, must be > 0
 - **Success:** updated Field entity
@@ -56,7 +56,7 @@ None — all attributes are primitives with simple validation.
 - **Events emitted:** FieldUpdatedEvent
 
 ### ToggleFieldStatus
-- **Trigger:** user action (admin or manager)
+- **Trigger:** user action (ADMIN or MANAGER)
 - **Input:** fieldId
 - **Rules:** toggles between ACTIVE and INACTIVE
 - **Success:** updated Field entity with toggled status
@@ -64,7 +64,7 @@ None — all attributes are primitives with simple validation.
 - **Events emitted:** FieldUpdatedEvent
 
 ### DeleteField
-- **Trigger:** user action (admin only)
+- **Trigger:** user action (ADMIN only)
 - **Input:** fieldId
 - **Rules:** hard delete if no external references exist. Soft delete if referenced by other domains.
 - **Success:** field deleted (hard or soft)
@@ -97,11 +97,11 @@ None — all attributes are primitives with simple validation.
 
 | Use Case | Roles |
 |----------|-------|
-| CreateField | admin, manager |
-| EditField | admin, manager |
-| DeleteField | admin |
-| GetField | admin, manager |
-| ListFields | admin, manager |
+| CreateField | ADMIN, MANAGER |
+| EditField | ADMIN, MANAGER |
+| DeleteField | ADMIN |
+| GetField | ADMIN, MANAGER |
+| ListFields | ADMIN, MANAGER |
 
 ## Constraints
 

@@ -21,7 +21,7 @@ ceremony — just update and verify.
 - Affected repo(s): backend, frontend, or both
 
 ```bash
-cd <repo> && tokenzip pnpm outdated <package>
+cd <repo> && contextzip pnpm outdated <package>
 ```
 
 ### 2. Research
@@ -68,8 +68,8 @@ summary with line numbers and usage context.
 ### 5. Apply
 ```bash
 git stash                                          # isolate existing uncommitted work
-cd <repo> && tokenzip pnpm update <pkg>@<target>
-cd <repo> && tokenzip pnpm add <peer>@<version>    # if required peers
+cd <repo> && contextzip pnpm update <pkg>@<target>
+cd <repo> && contextzip pnpm add <peer>@<version>    # if required peers
 ```
 
 For each breaking change, update all affected files:
@@ -85,13 +85,13 @@ Run verification via `superpowers:verification-before-completion` plus
 farm-app specifics:
 
 ```bash
-cd backend && tokenzip pnpm test --coverage
-cd backend && tokenzip pnpm test:e2e
-cd backend && tokenzip tsc --noEmit
-cd frontend && tokenzip pnpm build
-cd frontend && tokenzip pnpm lint
-cd frontend && tokenzip tsc --noEmit
-cd frontend && tokenzip pnpm test:e2e
+cd backend && contextzip pnpm test --coverage
+cd backend && contextzip pnpm test:e2e
+cd backend && contextzip tsc --noEmit
+cd frontend && contextzip pnpm build
+cd frontend && contextzip pnpm lint
+cd frontend && contextzip tsc --noEmit
+cd frontend && contextzip pnpm test:e2e
 ```
 
 **If any check fails:**

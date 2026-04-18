@@ -38,7 +38,7 @@ All of these must pass before claiming completion or allowing a commit/PR:
 - Playwright failing → see troubleshooting section below.
 - After 2 focused attempts still failing → present the gap to the user with specific uncovered lines or surviving mutants, ask whether to continue writing tests or accept the score with justification in the PR body.
 
-**Never claim verification passed without fresh output in the current session.**
+**Never claim verification passed without re-running checks in the current session (cached output from prior sessions does not count).**
 
 ## Architectural conformance checklist
 
@@ -110,7 +110,4 @@ See `docs/coding-patterns/frontend/e2e-test.md` Troubleshooting section for the 
 
 ## Security — hard rule
 
-Never commit `.env` files (must be in `.gitignore`). Never hardcode credentials,
-tokens, or secrets in code. Environment variables are always read from `process.env`.
-If a new env var is needed, add it to `.env.example` with a placeholder and
-document it in the PR body.
+All config and secrets via `process.env`. Never hardcode credentials, tokens, API keys, or connection strings in code. Never commit `.env` files (must be in `.gitignore`). New env vars → `.env.example` with placeholder + document in PR body.

@@ -22,9 +22,9 @@ opens a PR without explicit user confirmation at each step.**
 ### 1. Show current state
 
 ```bash
-tokenzip git status
-tokenzip git diff --stat
-tokenzip git log main..HEAD --oneline
+contextzip git status
+contextzip git diff --stat
+contextzip git log main..HEAD --oneline
 ```
 
 Present:
@@ -50,7 +50,7 @@ For each item below, ask explicitly: **"Does this need updating? If yes, edit no
 If any doc needs updating, edit it **now, before proceeding**. Do not defer to
 "a later PR". Past sessions caused stale docs by deferring — this is a hard rule.
 
-Once edits are done, run `tokenzip git status` to confirm the doc changes show up.
+Once edits are done, run `contextzip git status` to confirm the doc changes show up.
 
 ### 3. Verification
 

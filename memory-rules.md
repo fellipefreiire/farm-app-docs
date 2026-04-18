@@ -109,9 +109,7 @@ When a skill or conversation produces a new piece of knowledge, the model asks:
    with a link to the canonical (or `pending`).
 3. **Is it ephemeral?** → Do not write to memory.
 
-If the answer to (1) is yes, memory is **optional** and only useful if the
-model would need to find this entry faster than it would find the canonical
-file (rare — the canonical file is usually findable).
+If the answer to (1) is yes, skip memory — the canonical file is the right place.
 
 ---
 

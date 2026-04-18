@@ -20,7 +20,7 @@ PACKAGE_MANAGER        = pnpm
 - `claude-mem` — cross-session memory (rules: `docs/memory-rules.md`)
 - `context-mode` — session state restore + generic sandbox + `/context-mode:ctx-stats`
 - `context7` (MCP) — live library documentation
-- `contextzip` / `tokenzip` (local CLI) — per-tool output filters (scope split: `docs/scope-split.md`)
+- `contextzip` (local CLI) — per-tool output filters (scope split: `docs/scope-split.md`)
 
 **Not installed** (deliberate): Playwright MCP, Memory MCP, GitHub MCP, sequential-thinking — too heavy or redundant with `gh` CLI + `claude-mem`.
 
@@ -32,9 +32,9 @@ rules and skills.
 
 ## Shell commands
 
-Always prefix shell commands with `tokenzip`. It routes to a specialized filter
-when one exists (pnpm, tsc, vitest, playwright, prisma, git, gh, lint, next, etc.)
-and passes through unchanged otherwise. Always safe. Reference: `tokenzip --help`.
+Prefix all shell commands with `contextzip` (routes to specialized filters, pass-through otherwise). Scope: `docs/scope-split.md`. Usage: `contextzip --help`.
+
+> **Note:** `contextzip` wraps output filtering only — it does not auto-execute git actions. Git is always explicit (see Git workflow below).
 
 ## Git workflow
 
@@ -78,20 +78,13 @@ When implementation is complete, skills STOP and hand off. The user invokes
 Everything else (planning, implementing, debugging, committing, reviewing,
 branching) → `superpowers` skills, invoked by `superpowers:using-superpowers`.
 
-## Architecture invariants (short form)
-
-- Clean Arch layers: `domain → application → infra`. Never import across layers in the wrong direction.
-- Cross-domain side effects: Domain Events. Cross-domain data: QueryBus. Use cases never import another domain's repository.
-- Dates: backend stores UTC, frontend always `getUTC*()`.
-- Migrations: `prisma generate` then `prisma migrate dev` after every schema change. Never skip.
-
 Full architecture: `docs/architecture.md`. Domain boundaries: `docs/rules/`. Flows: `docs/flows/<domain>.md`.
 
 ## Database migrations
 
 ```bash
-cd backend && tokenzip pnpm prisma generate
-cd backend && tokenzip pnpm prisma migrate dev
+cd backend && contextzip pnpm prisma generate
+cd backend && contextzip pnpm prisma migrate dev
 ```
 
 If `migrate dev` fails: stop, fix DB state, ask user before proceeding. Never
@@ -114,18 +107,18 @@ Never commit to `main` or `development` directly. Never open a PR targeting
 ## Commands
 
 ```bash
-# Backend (prefix with tokenzip per "Shell commands" above)
-cd backend && tokenzip pnpm dev
-cd backend && tokenzip pnpm test
-cd backend && tokenzip pnpm test:e2e
-cd backend && tokenzip pnpm prisma generate
-cd backend && tokenzip pnpm prisma migrate dev
+# Backend (prefix with contextzip per "Shell commands" above)
+cd backend && contextzip pnpm dev
+cd backend && contextzip pnpm test
+cd backend && contextzip pnpm test:e2e
+cd backend && contextzip pnpm prisma generate
+cd backend && contextzip pnpm prisma migrate dev
 
 # Frontend
-cd frontend && tokenzip pnpm dev
-cd frontend && tokenzip pnpm build
-cd frontend && tokenzip pnpm lint
-cd frontend && tokenzip pnpm test:e2e
+cd frontend && contextzip pnpm dev
+cd frontend && contextzip pnpm build
+cd frontend && contextzip pnpm lint
+cd frontend && contextzip pnpm test:e2e
 ```
 
 ## Doc index
@@ -142,16 +135,15 @@ cd frontend && tokenzip pnpm test:e2e
 | `docs/verification-rules.md` | Farm-app QA rules (thresholds, architectural conformance, Stryker, Playwright troubleshooting) |
 | `docs/glossary.md` | Terminology (UI ↔ code) |
 | `docs/roadmap.md` | Product roadmap + Pós-MVP backlog |
-| `docs/plans/<feature>.md` | Active plans (working dir) |
+| `docs/plans/<feature>.md` | Active specs and implementation plans (brainstorming + writing-plans output) |
 | `docs/memory-rules.md` | What goes in `claude-mem` at project scope |
 | `docs/scope-split.md` | Which tool owns which command output |
 
 ## Anti-hallucination
 
-- Never assume — when in doubt, stop and ask.
 - Never use a library method without confirming it exists in the installed version.
 - Never modify a file without reading it first.
 - Never reference a field/method of an entity without reading its file — memory degrades over long sessions.
-- Evidence over assertions — run tests and verify.
+- Evidence over assertions — run tests and verify output in current session.
 
 Enforced by `superpowers:verification-before-completion`.

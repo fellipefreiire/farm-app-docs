@@ -1,25 +1,25 @@
 # Domain Organization Pattern
 
-Domains are top-level folders under `src/domains/`. Each domain maps to a bounded context from `docs/rules/<domain>.md`. This document defines when and how to organize domains — including multi-entity domains that require subdomain folders.
+Domains = top-level folders under `src/domains/`. Each domain maps to bounded context from `docs/rules/<domain>.md`. Defines when/how to organize domains — including multi-entity domains needing subdomain folders.
 
 ---
 
 ## Decision: flat vs subdomain structure
 
-A domain starts flat. When it grows to contain **two or more entities with full CRUD**, split into subdomain folders.
+Domain starts flat. When grows to **two or more entities with full CRUD**, split into subdomain folders.
 
 | Scenario | Structure | Example |
 |----------|-----------|---------|
 | Single entity or simple domain | Flat | `domains/audit-log/` |
-| Multiple entities in the same bounded context | Subdomain folders | `domains/crop/crop-types/`, `domains/crop/varieties/` |
+| Multiple entities in same bounded context | Subdomain folders | `domains/crop/crop-types/`, `domains/crop/varieties/` |
 
-**Rule of thumb:** if the domain has more than ~30 files across actions/api/schemas/components, it needs subdomain folders. Don't wait until it's unmanageable — split early.
+**Rule of thumb:** domain >~30 files across actions/api/schemas/components → needs subdomain folders. Split early.
 
 ---
 
 ## Flat domain structure
 
-Used when the domain has a single entity or a small set of closely related operations.
+Single entity or small set of closely related ops.
 
 ```
 src/domains/<domain>/
@@ -54,13 +54,13 @@ src/domains/<domain>/
   index.ts                          ← optional, re-exports from subdirectories
 ```
 
-**Example:** `domains/audit-log/` — single entity, append-only, no mutations from UI.
+**Example:** `domains/audit-log/` — single entity, append-only, no UI mutations.
 
 ---
 
 ## Subdomain structure
 
-Used when the domain contains multiple entities that belong to the same bounded context (share business rules, reference each other).
+Multiple entities in same bounded context (share business rules, reference each other).
 
 ```
 src/domains/<domain>/
@@ -107,7 +107,7 @@ src/domains/<domain>/
     store/
 ```
 
-Each subdomain folder mirrors the flat domain structure exactly — same directories, same naming conventions, same barrel exports.
+Each subdomain mirrors flat structure exactly — same dirs, same naming, same barrel exports.
 
 **Example:** `domains/crop/` with subdomains `crop-types/`, `varieties/`, `harvests/`.
 
@@ -136,13 +136,13 @@ import { VarietyTable } from '@/domains/crop/varieties/components'
 import { createHarvestAction } from '@/domains/crop/harvests/actions'
 ```
 
-No root-level `index.ts` re-exporting everything — import directly from the subdomain to keep dependencies explicit and tree-shaking effective.
+No root-level `index.ts` re-exporting everything — import directly from subdomain. Keeps deps explicit, tree-shaking effective.
 
 ---
 
 ## Cross-subdomain imports
 
-Entities within the same domain may reference each other. This is expected and allowed — they share a bounded context.
+Entities within same domain may reference each other. Expected, allowed — share bounded context.
 
 ```ts
 // domains/crop/varieties/components/forms/create-variety-form.tsx
@@ -155,13 +155,13 @@ import { listCropTypes } from '@/domains/crop/crop-types/api'
 import { listVarieties } from '@/domains/crop/varieties/api'
 ```
 
-**Rule:** Cross-domain imports (between different bounded contexts) go through API functions or events, never direct entity imports.
+**Rule:** Cross-domain imports (different bounded contexts) go through API functions or events — never direct entity imports.
 
 ---
 
 ## Subdomain naming
 
-Use the **plural entity name** as the subdomain folder name, matching the URL segment:
+Use **plural entity name** as subdomain folder, matching URL segment:
 
 | Entity | Subdomain folder | URL |
 |--------|-----------------|-----|
@@ -173,7 +173,7 @@ Use the **plural entity name** as the subdomain folder name, matching the URL se
 
 ## Pages (App Router)
 
-Pages remain at the top level under `app/(private)/`, not nested under the domain folder. The route structure mirrors the subdomain naming:
+Pages stay at top level under `app/(private)/`, not nested under domain folder. Route structure mirrors subdomain naming:
 
 ```
 src/app/(private)/
@@ -213,7 +213,7 @@ src/app/(private)/
 
 ## Detail page structure
 
-Every detail page follows the `DetailLayout` pattern with three slots:
+Every detail page follows `DetailLayout` pattern with three slots:
 
 ```tsx
 <DetailLayout
@@ -261,10 +261,10 @@ Every detail page follows the `DetailLayout` pattern with three slots:
 
 ### Rules
 
-1. **Relationship tables** in main are limited to 5 items via the API call (`limit: 5` or `perPage: 5`)
-2. **Audit preview** uses `LimitedAuditLogs` (list format), never `AuditLogTable` — the table is only for the dedicated `/audit` sub-page
-3. **`LimitedAuditLogs`** includes its own "Examinar mais itens" link — do not add `linkHref`/`linkLabel` to the wrapping `DetailSection`
-4. **Relationship sections** use `DetailSection` with `linkHref` and `linkLabel="Examinar mais itens"` pointing to the filtered list page
+1. **Relationship tables** in main limited to 5 items via API call (`limit: 5` or `perPage: 5`)
+2. **Audit preview** uses `LimitedAuditLogs` (list format), never `AuditLogTable` — table only for dedicated `/audit` sub-page
+3. **`LimitedAuditLogs`** includes own "Examinar mais itens" link — don't add `linkHref`/`linkLabel` to wrapping `DetailSection`
+4. **Relationship sections** use `DetailSection` with `linkHref` and `linkLabel="Examinar mais itens"` pointing to filtered list page
 5. **Sidebar** shows entity details with `DetailField` components — reference entities are links
 6. **Data fetching** uses `Promise.all` for parallel independent fetches
 7. **Audit API call** always uses `listAuditLogs({ entity: '<ENTITY>', entityId: id, limit: 5 })`
@@ -273,7 +273,7 @@ Every detail page follows the `DetailLayout` pattern with three slots:
 
 ## Audit sub-page structure
 
-Each entity has an audit sub-page at `/<entities>/[id]/audit`:
+Each entity has audit sub-page at `/<entities>/[id]/audit`:
 
 ```tsx
 // src/app/(private)/<entities>/[id]/audit/page.tsx
@@ -308,29 +308,27 @@ export default async function EntityAuditPage(props: NextPageProps<{ id: string 
 }
 ```
 
-The audit sub-page uses `AuditLogTable` (table format) with cursor pagination.
+Audit sub-page uses `AuditLogTable` (table format) with cursor pagination.
 
 ---
 
-## When to create a new subdomain
+## When to create new subdomain
 
-Add a new subdomain folder when the domain gains a new entity that has:
+Add subdomain folder when domain gains entity with:
 
-1. Its own CRUD operations (create, edit, delete, list, find)
-2. Its own schemas, actions, and API functions
-3. Its own components (forms, dialogs, table)
+1. Own CRUD ops (create, edit, delete, list, find)
+2. Own schemas, actions, API functions
+3. Own components (forms, dialogs, table)
 
-If the new concept is just a value object or a simple enum used by existing entities, keep it in the parent entity's files — don't create a subdomain for it.
+New concept = value object or simple enum used by existing entities → keep in parent entity's files. No subdomain.
 
 ---
 
 ## Migration: flat → subdomain
 
-When a flat domain grows to need subdomains:
-
 1. Create subdomain folders matching entity names
-2. Move files into their respective subdomain folders
-3. Update all import paths across the codebase
+2. Move files into respective subdomain folders
+3. Update all import paths across codebase
 4. Update barrel exports (`index.ts`) in each subdomain
-5. Remove the old root-level barrel export
+5. Remove old root-level barrel export
 6. Run `pnpm build` to verify no broken imports

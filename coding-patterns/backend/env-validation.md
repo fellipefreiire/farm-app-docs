@@ -1,6 +1,6 @@
 # Env Validation Pattern
 
-Zod-based environment variable validation at application startup. Fails fast if required variables are missing or malformed.
+Zod-based env var validation at app startup. Fails fast if required vars missing or malformed.
 
 ---
 
@@ -152,20 +152,20 @@ export const makeFakeEnvService = () => {
 }
 ```
 
-Use `makeFakeEnvService()` in unit tests instead of mocking `ConfigService` or instantiating `EnvService` manually. The fake values are deterministic and match the schema defaults where appropriate.
+Use `makeFakeEnvService()` in unit tests — not manual `ConfigService` mocks or bare `EnvService`. Fake values deterministic, match schema defaults where appropriate.
 
 ---
 
 ## Environment files
 
-Two env files, both with `.example` templates checked into git:
+Two env files, both `.example` templates committed to git:
 
 | File | Purpose | Loaded by |
 |------|---------|-----------|
 | `.env` | Development defaults | `ConfigModule.forRoot()` (app startup) and `setup-e2e.ts` (first) |
 | `.env.test` | E2E test overrides | `setup-e2e.ts` (second, with `override: true`) |
 
-`.env.test` only needs variables that **differ** from `.env` — typically `DATABASE_URL` (separate test database) and `REDIS_DB` (dedicated index to avoid flushing dev data). All other values are inherited from `.env`.
+`.env.test` needs only vars that **differ** from `.env` — typically `DATABASE_URL` (separate test DB) and `REDIS_DB` (dedicated index, avoids flushing dev data). All other values inherited from `.env`.
 
 ```
 # .env.test.example
@@ -175,16 +175,16 @@ REDIS_PORT=6379
 REDIS_DB=1
 ```
 
-The E2E setup (`test/setup-e2e.ts`) loads both files in order:
+E2E setup (`test/setup-e2e.ts`) loads both in order:
 
 ```ts
 config({ path: '.env', override: true })
 config({ path: '.env.test', override: true })
 ```
 
-This means `.env.test` values win over `.env` values. Each E2E run creates an isolated Postgres schema (random UUID) and flushes the Redis test DB before starting.
+`.env.test` wins. Each E2E run creates isolated Postgres schema (random UUID) and flushes Redis test DB before start.
 
-**Setup for a new project:**
+**New project setup:**
 ```bash
 cp .env.example .env
 cp .env.test.example .env.test
@@ -195,14 +195,13 @@ cp .env.test.example .env.test
 
 ## Rules
 
-- Every environment variable must be declared in `envSchema` — never read `process.env` directly in application code
-- Use `z.coerce.number()` for numeric env vars — they arrive as strings
+- Every env var must be declared in `envSchema` — never read `process.env` directly outside `EnvService`
+- Use `z.coerce.number()` for numeric vars — arrive as strings
 - Use `.default()` for optional vars with sensible defaults
 - Use `.optional()` only for truly optional vars (e.g., Redis in dev)
 - `EnvModule` is `@Global()` — available everywhere without importing
-- App fails fast on startup if validation fails — never silently use undefined values
-- When adding a new env var: add to schema, add to `.env.example` with placeholder, and to `.env.test.example` if it needs a different test value
-- `.env` and `.env.test` are in `.gitignore` — only `.example` files are committed
+- App fails fast on startup if validation fails — never silently uses undefined
+- New env var: add to schema, add to `.env.example` with placeholder, add to `.env.test.example` if needs different test value
 
 ---
 

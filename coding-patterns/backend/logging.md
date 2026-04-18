@@ -1,6 +1,6 @@
 # Logging Pattern
 
-Winston structured JSON logging. Domain layer never logs — logging lives exclusively in the infrastructure layer. Request logging is handled automatically by `RequestLoggingInterceptor`, so controllers only need to log errors and warnings.
+Winston structured JSON logging. Domain layer never logs — logging lives exclusively in infrastructure layer. Request logging handled automatically by `RequestLoggingInterceptor`, so controllers only log errors and warnings.
 
 ---
 
@@ -35,7 +35,7 @@ export abstract class LoggerRepository {
 
 ## Logger service
 
-`LoggerService` implements `LoggerRepository`. It receives the Winston instance via the `WINSTON_LOGGER` injection token — it never creates a logger directly.
+`LoggerService` implements `LoggerRepository`. Receives Winston instance via `WINSTON_LOGGER` injection token — never creates logger directly.
 
 ```ts
 import { Inject, Injectable } from '@nestjs/common'
@@ -72,11 +72,11 @@ export class LoggerService extends LoggerRepository {
 
 ## Winston config — `createDomainLogger(service)`
 
-Factory function that creates a Winston logger instance for a given service/domain.
+Factory creates Winston logger instance for given service/domain.
 
-- Uses `kleur` for colored output in production (human-readable structured logs)
-- Uses JSON format in development
-- Reads `LOG_LEVEL` from environment variables (defaults to `'info'`)
+- `kleur` for colored output in production (human-readable structured logs)
+- JSON format in development
+- Reads `LOG_LEVEL` from env (defaults to `'info'`)
 
 ```ts
 import { createDomainLogger } from './winston.config'
@@ -84,13 +84,13 @@ import { createDomainLogger } from './winston.config'
 const logger = createDomainLogger('order')
 ```
 
-The provider (`winston.provider.ts`) calls `createDomainLogger` and binds the result to the `WINSTON_LOGGER` token so it can be injected into `LoggerService`.
+Provider (`winston.provider.ts`) calls `createDomainLogger` and binds result to `WINSTON_LOGGER` token for injection into `LoggerService`.
 
 ---
 
 ## Logger module
 
-The module is `@Global` — import it once in `AppModule` and `LoggerService` is available everywhere. `RequestLoggingInterceptor` is registered as a global interceptor via `APP_INTERCEPTOR`.
+`@Global` — import once in `AppModule`, `LoggerService` available everywhere. `RequestLoggingInterceptor` registered as global interceptor via `APP_INTERCEPTOR`.
 
 ```ts
 import { Module, Global } from '@nestjs/common'
@@ -118,21 +118,21 @@ export class LoggerModule {}
 
 ## RequestLoggingInterceptor
 
-Automatically logs all HTTP requests — controllers do not need to log successful requests manually.
+Auto-logs all HTTP requests — controllers don't log successful requests manually.
 
-- Uses the `@ServiceTag` decorator (read via `Reflector`) to identify which domain/service handled the request
+- Uses `@ServiceTag` decorator (via `Reflector`) to identify domain/service
 - Maps domain errors to HTTP status codes for error logging
-- On success: logs `[status] Request handled` at `info` level
-- On failure: logs `[status] error message` at `error` level
-- Meta fields included: `service`, `route`, `httpMethod`, `timeToComplete`
+- Success: logs `[status] Request handled` at `info`
+- Failure: logs `[status] error message` at `error`
+- Meta fields: `service`, `route`, `httpMethod`, `timeToComplete`
 
-Because of the interceptor, controllers only need to log `warn` (recoverable issues like not-found) and `error` (unexpected failures). The interceptor handles the rest.
+Controllers only need `warn` (recoverable issues like not-found) and `error` (unexpected failures). Interceptor handles rest.
 
 ---
 
 ## FakeLogger (test double)
 
-Use `FakeLogger` in unit tests instead of the real `LoggerService`. It collects log messages into arrays for assertions.
+Use `FakeLogger` in unit tests instead of real `LoggerService`. Collects log messages into arrays for assertions.
 
 ```ts
 // test/infra/fake-logger.ts
@@ -171,7 +171,7 @@ export class FakeLogger {
 
 ## Usage in controllers
 
-Controllers log `error` and `warn` only. Successful request logging is handled by `RequestLoggingInterceptor`.
+Controllers log `error` and `warn` only. Successful request logging handled by `RequestLoggingInterceptor`.
 
 ```ts
 @Controller('/v1/orders')
@@ -284,22 +284,18 @@ Every log entry must include:
 | `actorId` | string | no |
 | `error` | `{ message, stack? }` | no |
 
-Meta is typed as `Record<string, unknown>` — include whichever fields are relevant to the log entry.
+Meta typed as `Record<string, unknown>` — include fields relevant to entry.
 
 ---
 
 ## Rules
 
-- Domain layer (entities, value objects, domain events) never logs
-- Use cases never log directly — let the caller (controller, subscriber) decide
-- Controllers log `error` and `warn` only — successful request logging is handled by `RequestLoggingInterceptor`
+- Controllers log `error` and `warn` only — successful request logging handled by `RequestLoggingInterceptor`
 - Event subscribers log `error` and `info`
-- Always include `domain` field in meta to enable filtering
-- Never log passwords, tokens, PII, or full request bodies
-- Never use `console.log` in production code — always use `LoggerService` (which implements `LoggerRepository`)
+- Always include `domain` field in meta for filtering
 - `LOG_LEVEL` env var controls minimum level (`debug` in dev, `info` in production)
 - Error objects must be serialized as `{ message, stack? }` — never pass raw Error instances to Winston
-- Always inject `LoggerService` — never create a Winston logger directly in application code
+- Always inject `LoggerService` — never create Winston logger directly in application code
 
 ---
 
@@ -324,11 +320,6 @@ export class CreateOrderUseCase {
 
 // WRONG: console.log in production code
 console.log('order created', order)  // use LoggerService
-
-// WRONG: using .log() instead of .info()
-this.logger.log('User registered', {  // .log() does not exist — use .info()
-  domain: 'auth',
-})
 
 // WRONG: creating Winston logger directly
 import { createLogger } from 'winston'

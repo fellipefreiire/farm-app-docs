@@ -1,6 +1,6 @@
 # QueryBus Pattern
 
-The QueryBus is an in-process request/reply mechanism for cross-domain data lookups. It decouples use cases from other domains' repositories while keeping the query synchronous. When migrating to microservices, the static bus becomes a broker (Kafka, RabbitMQ) — zero application code changes.
+QueryBus = in-process request/reply for cross-domain data lookups. Decouples use cases from other domains' repos, keeps query synchronous. Migrating to microservices: static bus becomes broker (Kafka, RabbitMQ) — zero app code changes.
 
 ---
 
@@ -11,7 +11,7 @@ The QueryBus is an in-process request/reply mechanism for cross-domain data look
 | Use case needs data **from another domain** (e.g., schedule needs harvest dates) | **QueryBus** |
 | Use case needs data **from its own domain** (e.g., purchase needs inventory inputs) | **Direct repository injection** |
 | Side effect after mutation (e.g., audit log after entity created) | **DomainEvents** (see `events.md`) |
-| Subscriber reacting to another domain's event | **Direct repository import** (subscribers are the cross-domain bridge) |
+| Subscriber reacting to another domain's event | **Direct repository import** (subscribers are cross-domain bridge) |
 
 **Rule of thumb:** Use cases never import repositories or error classes from other domains. Subscribers can.
 
@@ -33,13 +33,13 @@ src/infra/query-bus/query-bus.module.ts              ← NestJS wiring (@Global)
 test/query-bus/in-memory-query-bus.ts                ← test helper
 ```
 
-> **Flat domains** omit the `<subdomain>` level: `src/domain/<domain>/application/queries/`.
+> **Flat domains** omit `<subdomain>` level: `src/domain/<domain>/application/queries/`.
 
 ---
 
 ## Core primitives
 
-The three files in `src/core/query-bus/` follow the same static-class pattern as `DomainEvents`:
+Three files in `src/core/query-bus/` follow same static-class pattern as `DomainEvents`:
 
 ```ts
 // query.ts
@@ -76,7 +76,7 @@ export class QueryBus {
 
 ## 1. Query contract
 
-The query contract defines the request shape and the result type. It lives in the **responding** domain (the domain that owns the data). This is a pure data contract — no business logic, no dependencies.
+Query contract defines request shape + result type. Lives in **responding** domain (data owner). Pure data contract — no business logic, no dependencies.
 
 ```ts
 // src/domain/<domain>/application/queries/<query-name>.query.ts
@@ -96,12 +96,12 @@ export class Find<Entity>Query implements Query {
 ```
 
 **Rules for query contracts:**
-- Result type is a plain object or `null` — never a domain entity
-- Include only the fields consumers need — this is the anti-corruption layer
-- IDs are always `string` (not `UniqueEntityID`)
+- Result type = plain object or `null` — never domain entity
+- Include only fields consumers need — anti-corruption layer
+- IDs always `string` (not `UniqueEntityID`)
 - Dates stay as `Date`
-- The `queryName` must be unique across the entire application
-- The file exports both the class and the result type (consumers import both)
+- `queryName` must be unique across entire app
+- File exports both class and result type (consumers import both)
 
 **Naming convention:**
 - `Find<Entity>Query` — find by ID, returns single or null
@@ -112,7 +112,7 @@ export class Find<Entity>Query implements Query {
 
 ## 2. Handler
 
-The handler lives in the same domain as the query. It injects the domain's repository and maps the entity to the query result type.
+Handler lives in same domain as query. Injects domain's repository, maps entity to query result type.
 
 ```ts
 // src/domain/<domain>/application/handlers/<query-name>.handler.ts
@@ -146,9 +146,9 @@ export class Find<Entity>Handler
 **Rules for handlers:**
 - `@Injectable()` — registered as NestJS provider
 - Self-registers in constructor via `QueryBus.register()` — same pattern as event subscribers
-- Maps entity to plain result type — never returns the entity directly
+- Maps entity to plain result type — never returns entity directly
 - One handler per query — never reuse handlers across queries
-- Handler and query live in the same domain (the data owner)
+- Handler and query live in same domain (data owner)
 
 ---
 
@@ -176,10 +176,10 @@ export class QueryBusModule {}
 ```
 
 **Rules:**
-- `@Global()` — handlers must be instantiated at startup to self-register
+- `@Global()` — handlers must instantiate at startup to self-register
 - Imported in `AppModule` — alongside `EventsModule`
-- Each database module is imported once — even if it provides multiple handlers
-- When adding a new handler: add the provider here and import its database module if not already imported
+- Each database module imported once — even if it provides multiple handlers
+- Adding new handler: add provider here, import its database module if not already imported
 
 ---
 
@@ -215,15 +215,15 @@ export class MyUseCase {
 
 **Key points:**
 - `QueryBus` is static — no constructor injection needed
-- Import the **query class** and **result type** from the other domain's `queries/` folder
-- These imports are allowed because query files are pure contracts (no dependencies)
+- Import **query class** and **result type** from other domain's `queries/` folder
+- These imports allowed — query files are pure contracts (no dependencies)
 - Error classes must be **local** — never import errors from another domain
 
 ---
 
 ## 5. Local error classes
 
-When a use case needs an error for an entity from another domain, create a local copy:
+When use case needs error for entity from another domain, create local copy:
 
 ```ts
 // src/domain/schedule/application/use-cases/errors/harvest-not-found-error.ts
@@ -236,7 +236,7 @@ export class HarvestNotFoundError extends BaseError {
 }
 ```
 
-The error `name` must match the original — error filters map by `exception.name`, so the HTTP status mapping continues to work without changes.
+Error `name` must match original — error filters map by `exception.name`, so HTTP status mapping works without changes.
 
 ---
 
@@ -256,7 +256,7 @@ The error `name` must match the original — error filters map by `exception.nam
 
 ### Handler tests
 
-Test the handler directly with an InMemory repository:
+Test handler directly with InMemory repository:
 
 ```ts
 import { beforeEach, describe, expect, it } from 'vitest'
@@ -296,7 +296,7 @@ describe('Find<Entity>Handler', () => {
 
 ### Use case tests with InMemoryQueryBus
 
-Use cases that call `QueryBus.execute()` need query responses registered in tests:
+Use cases calling `QueryBus.execute()` need query responses registered in tests:
 
 ```ts
 import { InMemoryQueryBus } from 'test/query-bus/in-memory-query-bus'
@@ -332,7 +332,7 @@ describe('My Use Case', () => {
 })
 ```
 
-**For tests that need different responses per ID** (e.g., copy-schedule queries two different harvests), register a dynamic handler directly:
+**Tests needing different responses per ID** (e.g., copy-schedule queries two different harvests), register dynamic handler directly:
 
 ```ts
 import { QueryBus } from '@/core/query-bus/query-bus'
@@ -354,17 +354,17 @@ harvestsMap.set('harvest-2', { id: 'harvest-2', status: 'PLANNED', ... })
 
 ## Adding a new query
 
-When a use case needs data from another domain:
+When use case needs data from another domain:
 
-1. **Check if a query already exists** — see the table above
-2. **Create the query contract** in the responding domain's `application/queries/`
-3. **Create the handler** in the responding domain's `application/handlers/`
+1. **Check if query already exists** — see table above
+2. **Create query contract** in responding domain's `application/queries/`
+3. **Create handler** in responding domain's `application/handlers/`
 4. **Write handler tests** in `application/handlers/__tests__/`
-5. **Register the handler** in `QueryBusModule` (add provider + import database module if needed)
-6. **Refactor the use case** — replace repository import with `QueryBus.execute()`, create local error class if needed
+5. **Register handler** in `QueryBusModule` (add provider + import database module if needed)
+6. **Refactor use case** — replace repository import with `QueryBus.execute()`, create local error class if needed
 7. **Update use case tests** — replace InMemory repository with InMemoryQueryBus
-8. **Update HTTP module** — remove the cross-domain database module import (QueryBusModule is `@Global`)
-9. **Update error filter** — change import path to local error class (if error name is unchanged, no switch-case change needed)
+8. **Update HTTP module** — remove cross-domain database module import (`QueryBusModule` is `@Global`)
+9. **Update error filter** — change import path to local error class (if error name unchanged, no switch-case change needed)
 
 ---
 

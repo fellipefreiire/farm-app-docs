@@ -81,8 +81,9 @@ sequenceDiagram
   Owner->>App: Add operations + inputs per day
   App->>DB: Save schedule
 
-  Owner->>App: Generate field tickets
-  App->>DB: Create field tickets (pre-populated from schedule)
+  Owner->>App: Create field ticket (individually, per day/operation)
+  App->>DB: Create field ticket (DRAFT status)
+  Note over Owner,DB: ⚠️ "Generate from schedule" was removed per ADR 2026-03-19. FieldTickets are created individually.
 
   Owner->>App: Review field tickets
   Owner->>App: Edit inputs if needed

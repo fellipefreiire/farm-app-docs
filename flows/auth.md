@@ -22,6 +22,8 @@
 
 ## Sign up [MVP]
 
+> **Status: Post-MVP** — not yet implemented. Admin creates users directly for MVP.
+
 **Trigger:** User clicks "Criar conta" on sign-in page
 **Actor:** New user
 **Domain:** Auth
@@ -39,6 +41,8 @@
 ---
 
 ## Password recovery [MVP]
+
+> **Status: Post-MVP** — not yet implemented. Admin creates users directly for MVP.
 
 **Trigger:** User clicks "Esqueci minha senha" on sign-in page
 **Actor:** Existing user

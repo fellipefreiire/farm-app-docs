@@ -2,14 +2,14 @@
 
 ## Responsibility
 
-Vehicle and implement registry for the farm. Tracks tractors and agricultural implements (attachments/tools) used in field operations. Serves as the source of truth for fleet assets referenced by FieldTicket operations.
+Vehicle + implement registry for farm. Tracks tractors and agricultural implements used in field ops. Source of truth for fleet assets referenced by FieldTicket.
 
 ## Out of scope
 
-- Tractor-implement assignment per operation (owned by FieldTicket domain)
+- Tractor-implement assignment per operation (FieldTicket domain)
 - Maintenance scheduling (post-MVP)
-- Fuel tracking and operational hours (post-MVP)
-- Cost per vehicle/implement (owned by Financial domain, post-MVP)
+- Fuel tracking + operational hours (post-MVP)
+- Cost per vehicle/implement (Financial domain, post-MVP)
 - Operator assignment (post-MVP)
 - Vehicle-implement compatibility matrix (post-MVP)
 
@@ -33,12 +33,12 @@ Vehicle and implement registry for the farm. Tracks tractors and agricultural im
 | deletedAt | DateTime | no | set on soft delete |
 
 **Invariants:**
-- Code must be unique across all active (non-soft-deleted) vehicles
-- Year must be in valid range (1900 to current year + 1) when provided
-- Cannot hard delete if any FieldTicket references this Vehicle
+- Code unique across all active (non-soft-deleted) vehicles
+- Year in valid range (1900 to current year + 1) when provided
+- No hard delete if FieldTicket references Vehicle
 - Soft delete when referenced by existing field tickets
 
-**Lifecycle:** ACTIVE ↔ INACTIVE (toggle). Soft-deleted when referenced and user requests deletion.
+**Lifecycle:** ACTIVE ↔ INACTIVE (toggle). Soft-deleted when referenced + user requests deletion.
 
 ### Implement (Implemento)
 
@@ -59,67 +59,67 @@ Vehicle and implement registry for the farm. Tracks tractors and agricultural im
 | deletedAt | DateTime | no | set on soft delete |
 
 **Invariants:**
-- Code must be unique across all active (non-soft-deleted) implements
-- Year must be in valid range (1900 to current year + 1) when provided
-- tankCapacityL must be > 0 when provided
-- workingWidthM must be > 0 when provided
-- Cannot hard delete if any FieldTicket references this Implement
+- Code unique across all active (non-soft-deleted) implements
+- Year in valid range (1900 to current year + 1) when provided
+- `tankCapacityL` > 0 when provided
+- `workingWidthM` > 0 when provided
+- No hard delete if FieldTicket references Implement
 - Soft delete when referenced by existing field tickets
 
-**Lifecycle:** ACTIVE ↔ INACTIVE (toggle). Soft-deleted when referenced and user requests deletion.
+**Lifecycle:** ACTIVE ↔ INACTIVE (toggle). Soft-deleted when referenced + user requests deletion.
 
 ## Key Design Decisions
 
-- Vehicle and Implement are **independent entities** (NOT parent-child). Implements are shared across tractors.
-- The tractor-implement assignment happens at the FieldTicket level, not in Fleet.
-- Code uniqueness is per-namespace: vehicles.code and implements.code are separate.
-- VehicleType and ImplementType are enums (system-controlled closed sets), not user-configurable entities.
+- Vehicle and Implement are **independent entities** (NOT parent-child). Implements shared across tractors.
+- Tractor-implement assignment happens at FieldTicket level, not in Fleet.
+- Code uniqueness per-namespace: `vehicles.code` and `implements.code` separate.
+- `VehicleType` and `ImplementType` are enums (system-controlled closed sets), not user-configurable.
 
 ## Use Cases
 
 ### CreateVehicle
 - **Trigger:** user action
-- **Input:** code, name, type, licensePlate (optional), brand (optional), model (optional), year (optional)
-- **Rules:** code must be unique among active non-soft-deleted vehicles
+- **Input:** `code`, `name`, `type`, `licensePlate` (optional), `brand` (optional), `model` (optional), `year` (optional)
+- **Rules:** code unique among active non-soft-deleted vehicles
 - **Success:** Vehicle entity created
-- **Errors:** VehicleAlreadyExistsError
-- **Events emitted:** VehicleCreatedEvent
+- **Errors:** `VehicleAlreadyExistsError`
+- **Events emitted:** `VehicleCreatedEvent`
 
 ### EditVehicle
 - **Trigger:** user action
-- **Input:** vehicleId, code (optional), name (optional), type (optional), licensePlate (optional), brand (optional), model (optional), year (optional)
-- **Rules:** if code changed, new code must be unique among active non-soft-deleted vehicles
+- **Input:** `vehicleId`, `code` (optional), `name` (optional), `type` (optional), `licensePlate` (optional), `brand` (optional), `model` (optional), `year` (optional)
+- **Rules:** if code changed, new code unique among active non-soft-deleted vehicles
 - **Success:** Vehicle entity updated
-- **Errors:** VehicleNotFoundError, VehicleAlreadyExistsError
-- **Events emitted:** VehicleUpdatedEvent
+- **Errors:** `VehicleNotFoundError`, `VehicleAlreadyExistsError`
+- **Events emitted:** `VehicleUpdatedEvent`
 
 ### DeleteVehicle
 - **Trigger:** user action
-- **Input:** vehicleId
+- **Input:** `vehicleId`
 - **Rules:** hard delete if no field tickets reference it. Soft delete if referenced.
 - **Success:** Vehicle deleted (hard or soft)
-- **Errors:** VehicleNotFoundError
-- **Events emitted:** VehicleDeletedEvent
+- **Errors:** `VehicleNotFoundError`
+- **Events emitted:** `VehicleDeletedEvent`
 
 ### ToggleVehicleStatus
 - **Trigger:** user action
-- **Input:** vehicleId
-- **Rules:** toggles active between true and false
+- **Input:** `vehicleId`
+- **Rules:** toggles `active` between true and false
 - **Success:** Vehicle status toggled
-- **Errors:** VehicleNotFoundError
-- **Events emitted:** VehicleUpdatedEvent
+- **Errors:** `VehicleNotFoundError`
+- **Events emitted:** `VehicleUpdatedEvent`
 
 ### FindVehicleById
 - **Trigger:** user action
-- **Input:** vehicleId
+- **Input:** `vehicleId`
 - **Rules:** only return non-soft-deleted records
 - **Success:** Vehicle entity
-- **Errors:** VehicleNotFoundError
+- **Errors:** `VehicleNotFoundError`
 - **Events emitted:** none
 
 ### ListVehicles
 - **Trigger:** user action
-- **Input:** pagination params (page, perPage), optional filters (status: active/inactive, search by code or name)
+- **Input:** pagination params (`page`, `perPage`), optional filters (status: active/inactive, search by code or name)
 - **Rules:** only return non-soft-deleted records, paginated
 - **Success:** paginated list of Vehicle entities
 - **Errors:** none
@@ -127,47 +127,47 @@ Vehicle and implement registry for the farm. Tracks tractors and agricultural im
 
 ### CreateImplement
 - **Trigger:** user action
-- **Input:** code, name, type, brand (optional), model (optional), year (optional), tankCapacityL (optional), workingWidthM (optional)
-- **Rules:** code must be unique among active non-soft-deleted implements
+- **Input:** `code`, `name`, `type`, `brand` (optional), `model` (optional), `year` (optional), `tankCapacityL` (optional), `workingWidthM` (optional)
+- **Rules:** code unique among active non-soft-deleted implements
 - **Success:** Implement entity created
-- **Errors:** ImplementAlreadyExistsError
-- **Events emitted:** ImplementCreatedEvent
+- **Errors:** `ImplementAlreadyExistsError`
+- **Events emitted:** `ImplementCreatedEvent`
 
 ### EditImplement
 - **Trigger:** user action
-- **Input:** implementId, code (optional), name (optional), type (optional), brand (optional), model (optional), year (optional), tankCapacityL (optional), workingWidthM (optional)
-- **Rules:** if code changed, new code must be unique among active non-soft-deleted implements
+- **Input:** `implementId`, `code` (optional), `name` (optional), `type` (optional), `brand` (optional), `model` (optional), `year` (optional), `tankCapacityL` (optional), `workingWidthM` (optional)
+- **Rules:** if code changed, new code unique among active non-soft-deleted implements
 - **Success:** Implement entity updated
-- **Errors:** ImplementNotFoundError, ImplementAlreadyExistsError
-- **Events emitted:** ImplementUpdatedEvent
+- **Errors:** `ImplementNotFoundError`, `ImplementAlreadyExistsError`
+- **Events emitted:** `ImplementUpdatedEvent`
 
 ### DeleteImplement
 - **Trigger:** user action
-- **Input:** implementId
+- **Input:** `implementId`
 - **Rules:** hard delete if no field tickets reference it. Soft delete if referenced.
 - **Success:** Implement deleted (hard or soft)
-- **Errors:** ImplementNotFoundError
-- **Events emitted:** ImplementDeletedEvent
+- **Errors:** `ImplementNotFoundError`
+- **Events emitted:** `ImplementDeletedEvent`
 
 ### ToggleImplementStatus
 - **Trigger:** user action
-- **Input:** implementId
-- **Rules:** toggles active between true and false
+- **Input:** `implementId`
+- **Rules:** toggles `active` between true and false
 - **Success:** Implement status toggled
-- **Errors:** ImplementNotFoundError
-- **Events emitted:** ImplementUpdatedEvent
+- **Errors:** `ImplementNotFoundError`
+- **Events emitted:** `ImplementUpdatedEvent`
 
 ### FindImplementById
 - **Trigger:** user action
-- **Input:** implementId
+- **Input:** `implementId`
 - **Rules:** only return non-soft-deleted records
 - **Success:** Implement entity
-- **Errors:** ImplementNotFoundError
+- **Errors:** `ImplementNotFoundError`
 - **Events emitted:** none
 
 ### ListImplements
 - **Trigger:** user action
-- **Input:** pagination params (page, perPage), optional filters (status: active/inactive, search by code or name, filter by type)
+- **Input:** pagination params (`page`, `perPage`), optional filters (status: active/inactive, search by code or name, filter by type)
 - **Rules:** only return non-soft-deleted records, paginated
 - **Success:** paginated list of Implement entities
 - **Errors:** none
@@ -176,7 +176,7 @@ Vehicle and implement registry for the farm. Tracks tractors and agricultural im
 ## Cross-Domain Dependencies
 
 - **Depends on:** none (independent registry)
-- **Referenced by:** FieldTicket (vehicleId + implementId per operation)
+- **Referenced by:** FieldTicket (`vehicleId` + `implementId` per operation)
 - **Emits events consumed by:** Audit (all mutation events)
 
 ## QueryBus Queries
@@ -203,30 +203,30 @@ Vehicle and implement registry for the farm. Tracks tractors and agricultural im
 
 ## Constraints
 
-- Code uniqueness is per-namespace (vehicles and implements have separate code spaces)
-- Soft delete preserves data for audit trail and field ticket history
-- Hard delete only when no field tickets reference the entity
+- Code uniqueness per-namespace (vehicles + implements have separate code spaces)
+- Soft delete preserves data for audit trail + field ticket history
+- Hard delete only when no field tickets reference entity
 - All mutations audited via domain events
-- tankCapacityL and workingWidthM are positive floats when provided
+- `tankCapacityL` and `workingWidthM` positive floats when provided
 
 ## Edge Cases
 
 - User submits "Trator 01" when "Trator 01" exists → reject with error
-- User deletes Vehicle that has field tickets → soft delete
+- User deletes Vehicle with field tickets → soft delete
 - User deletes Vehicle with no field tickets → hard delete
-- Inactive vehicle shown in existing FieldTicket records but cannot be selected for new field tickets
-- User creates Vehicle with code matching a soft-deleted Vehicle → allowed (uniqueness only applies to active records)
-- Soft-deleted vehicles remain visible in FieldTicket details (historical data preserved) but cannot be accessed directly or selected for new records
+- Inactive vehicle visible in existing FieldTicket records but not selectable for new field tickets
+- User creates Vehicle with code matching soft-deleted Vehicle → allowed (uniqueness applies to active records only)
+- Soft-deleted vehicles remain in FieldTicket details (historical data preserved) but inaccessible directly or for new records
 - Same edge cases apply to Implement
 
 ## Post-MVP
 
-- Maintenance scheduling (preventive and corrective)
-- Fuel tracking and consumption per vehicle
+- Maintenance scheduling (preventive + corrective)
+- Fuel tracking + consumption per vehicle
 - Operational hours tracking
 - Cost per vehicle/implement
 - Operator assignment (link to User)
-- Additional VehicleType values (MOTORCYCLE, CAR, TRUCK)
+- Additional `VehicleType` values (MOTORCYCLE, CAR, TRUCK)
 - Vehicle-implement compatibility matrix
 - Vehicle inspection checklists
 

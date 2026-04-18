@@ -1,6 +1,10 @@
+Compressing inline (no file path provided, applying rules directly):
+
+---
+
 # Mutation Testing Pattern
 
-Stryker Mutator with Vitest runner. Validates that tests actually detect bugs — not just execute code. Runs only against unit tests (never E2E).
+Stryker Mutator with Vitest runner. Validates tests detect bugs — not just execute code. Runs only against unit tests (never E2E).
 
 ---
 
@@ -43,14 +47,14 @@ export default {
 
 | Option | Value | Why |
 |--------|-------|-----|
-| `appendPlugins` | `['@stryker-mutator/vitest-runner']` | **Required with pnpm.** pnpm isolates packages — Stryker's auto-discovery (`@stryker-mutator/*`) only finds plugins in its own `node_modules`, which doesn't include the vitest-runner. This option explicitly loads it. |
-| `testRunner` | `vitest` | Matches the project test framework |
+| `appendPlugins` | `['@stryker-mutator/vitest-runner']` | **Required with pnpm.** pnpm isolates packages — Stryker auto-discovery only finds plugins in its own `node_modules`, excluding vitest-runner. Explicitly loads it. |
+| `testRunner` | `vitest` | Matches project test framework |
 | `vitest.configFile` | `vitest.config.mjs` | Unit test config — excludes E2E tests |
 | `mutate` | domain + shared + core | Default scope — where business logic lives |
 | `!__tests__`, `!*.spec.ts`, `!*.e2e-spec.ts` | excluded | Never mutate test files |
-| `reporters` | clear-text, progress, html | Terminal output + detailed HTML report for analysis |
-| `coverageAnalysis` | `perTest` | Only runs tests that cover the mutated code (faster) |
-| `thresholds` | high: 90, low: 70, break: 70 | Global minimum — per-layer thresholds are enforced in Phase 3 |
+| `reporters` | clear-text, progress, html | Terminal output + HTML report for analysis |
+| `coverageAnalysis` | `perTest` | Only runs tests covering mutated code (faster) |
+| `thresholds` | high: 90, low: 70, break: 70 | Global minimum — per-layer thresholds enforced in Phase 3 |
 
 ---
 
@@ -58,16 +62,16 @@ export default {
 
 ### Default scope (automatic)
 
-The `mutate` array in the config covers:
+`mutate` array covers:
 - `src/domain/**/*.ts` — entities, use cases, events, subscribers, errors
 - `src/shared/**/*.ts` — cryptography abstractions, utilities (sanitize, withTimeout, retryWithBackoff)
 - `src/core/**/*.ts` — Either, Entity, AggregateRoot, WatchedList, DomainEvents
 
-These are tested by **unit tests only** (`.spec.ts` files). Stryker never runs E2E tests.
+Tested by **unit tests only** (`.spec.ts`). Stryker never runs E2E tests.
 
 ### Infrastructure scope (on demand)
 
-Infrastructure code (`src/infra/`) is **not** in the default `mutate` scope. Run it explicitly when needed:
+`src/infra/` not in default `mutate` scope. Run explicitly when needed:
 
 ```bash
 stryker run --mutate 'src/infra/auth/**/*.ts'
@@ -77,9 +81,9 @@ stryker run --mutate 'src/infra/http/pipes/**/*.ts'
 stryker run --mutate 'src/infra/http/filters/**/*.ts'
 ```
 
-Use this for:
-- New infrastructure code that has unit tests
-- `/health-check` or `/code-audit` when mutation score is requested for infra
+Use for:
+- New infra code with unit tests
+- `/health-check` or `/code-audit` when mutation score requested for infra
 - Targeted analysis of specific infra modules
 
 ---
@@ -112,27 +116,27 @@ Per-layer thresholds enforced during Phase 3 validation:
 | Shared + core (`src/shared/`, `src/core/`) | 90% |
 | Infrastructure (`src/infra/`) — when tested | 70% |
 
-The `break: 70` in the config is a global safety net. The per-layer thresholds above are stricter — they are enforced by the verification process documented in `docs/verification-rules.md` and invoked by `/finish` before any integration.
+`break: 70` is global safety net. Per-layer thresholds above are stricter — enforced by verification process in `docs/verification-rules.md`, invoked by `/finish` before integration.
 
 ---
 
 ## Reading the report
 
-After a run, open `reports/mutation/mutation.html` in a browser for detailed analysis.
+After run, open `reports/mutation/mutation.html` for detailed analysis.
 
 ### Mutant statuses
 
 | Status | Meaning | Action |
 |--------|---------|--------|
-| **Killed** | A test caught the mutation | Good — no action needed |
-| **Survived** | No test caught the mutation | Add or strengthen assertions |
-| **No coverage** | No test covers this code | Write a test for this code path |
+| **Killed** | Test caught mutation | Good — no action needed |
+| **Survived** | No test caught mutation | Add or strengthen assertions |
+| **No coverage** | No test covers this code | Write test for this code path |
 | **Timeout** | Mutant caused infinite loop | Usually fine — counts as detected |
 | **Runtime error** | Mutant broke compilation | Usually fine — counts as detected |
 
 ### Fixing surviving mutants
 
-When a mutant survives, it means your tests would still pass if that line of code were changed. Common fixes:
+Surviving mutant = tests still pass if that line changed. Common fixes:
 
 ```ts
 // Surviving mutant: changed `>` to `>=` in pagination
@@ -166,8 +170,8 @@ expect(inMemoryAuditLogRepository.items[0]).toEqual(
 
 ## Timeout handling
 
-- **Per-mutant timeout:** Stryker default (`timeoutMS`). A single mutant that hangs is killed and marked as timeout (counts as detected).
-- **Total process timeout:** 10 minutes, enforced by the verification step in `/finish`. If exceeded, the user is asked whether to wait or skip. See `docs/verification-rules.md` (Stryker section) for the full timeout policy.
+- **Per-mutant timeout:** Stryker default (`timeoutMS`). Hanging mutant killed, marked timeout (counts as detected).
+- **Total process timeout:** 10 minutes, enforced by `/finish` verification. If exceeded, user asked to wait or skip. See `docs/verification-rules.md` (Stryker section) for full timeout policy.
 
 ---
 
@@ -175,12 +179,12 @@ expect(inMemoryAuditLogRepository.items[0]).toEqual(
 
 - Stryker runs **only unit tests** — never E2E (`.e2e-spec.ts`)
 - Default scope: `src/domain/`, `src/shared/`, `src/core/` — business logic only
-- Infrastructure (`src/infra/`) is mutated **on demand** via `--mutate` flag
-- All non-E2E test files (`.spec.ts`) must produce surviving mutant score above threshold
-- Use `--mutate <changed-files>` in Phase 3 to scope mutation testing to the current change
-- HTML report is generated in `reports/mutation/` (gitignored)
-- A surviving mutant means a missing or weak assertion — fix the test, not the code
-- Never disable or skip mutators to game the score
+- `src/infra/` mutated **on demand** via `--mutate` flag
+- All non-E2E test files (`.spec.ts`) must score above threshold
+- Use `--mutate <changed-files>` in Phase 3 to scope to current change
+- HTML report in `reports/mutation/` (gitignored)
+- Surviving mutant = missing/weak assertion — fix test, not code
+- Never disable or skip mutators to game score
 
 ---
 
