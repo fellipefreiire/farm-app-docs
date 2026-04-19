@@ -31,7 +31,9 @@
 **Happy path:**
 1. User opens field ticket → sees pre-populated inputs (field, date, operations, products, dosages)
 2. User reviews each item → can edit inputs if needed (change product, adjust dosage)
-3. User confirms review → status changes to "reviewed"
+3. **SPRAYING only:** user fills equipment config (vehicle, implement, water volume, bar, turbine, nozzle count, pressure, gear, pH)
+4. **FERTIGATION:** vehicle/implement optional; spray config fields are hidden
+5. User confirms review → status changes to "reviewed"
 
 **Error cases:**
 - Input not available in inventory → warning
@@ -46,22 +48,26 @@
 
 **Happy path:**
 1. User selects one or more reviewed field tickets → clicks "Imprimir"
-2. System generates printable format → browser print dialog opens
-3. Status changes to "printed"
-4. Printed field ticket is handed to tractor operator
+2. System groups tickets by type: SPRAYING (6/page, 3×2 grid) and FERTIGATION (8/page, 4×2 grid) on separate pages
+3. System generates printable format → browser print dialog opens
+4. Status changes to "printed"
+5. Printed field ticket is handed to operator (Tratorista for SPRAYING, Irrigante for FERTIGATION)
 
 ---
 
 ## Finalize field ticket [MVP]
 
-**Trigger:** Tractor operator returns the field ticket after executing the work
+**Trigger:** Operator returns the field ticket after executing the work
 **Actor:** Farm owner, Farm manager
 **Domain:** FieldTicket
 
 **Happy path:**
-1. Tractor operator returns field ticket after completing work in the field
+1. Operator (Tratorista for SPRAYING, Irrigante for FERTIGATION) returns field ticket after completing work in the field
 2. User opens the field ticket in the system → clicks "Finalizar"
-3. System shows validation screen: user confirms each input was used correctly
+3. System shows validation screen: user fills execution data
+   - **Both types:** start/end time, operator name (label adapts: "Tratorista" or "Irrigante"), executed dosages per input
+   - **SPRAYING only:** hourmeter start/end required
+   - **FERTIGATION:** hourmeter fields hidden and not required
 4. If last-minute changes happened in the field → user edits the inputs to reflect what was actually used
 5. User confirms → status changes to "finalized"
 6. Audit log records the finalization with actual inputs used
