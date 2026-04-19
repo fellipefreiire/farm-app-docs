@@ -47,13 +47,16 @@ FieldTicket IS operation. Born as DRAFT when manager adds operation to schedule,
 
 **Invariants:**
 - Date must fall within Harvest period (startDate to expectedEndDate)
-- Cannot transition to REVIEWED without vehicleId and implementId
+- SPRAYING: cannot transition to REVIEWED without vehicleId and implementId
+- FERTIGATION: can transition to REVIEWED without vehicleId and implementId (no equipment required)
 - Cannot transition to PRINTED without status REVIEWED
 - Cannot transition to COMPLETED without status PRINTED
+- SPRAYING: hourmeterStart and hourmeterEnd required for finalization
+- FERTIGATION: hourmeterStart and hourmeterEnd not applicable (not required, ignored)
 - Cannot cancel COMPLETED ticket
 - cancelReason required when cancelling
-- vehicleId must reference active Vehicle
-- implementId must reference active Implement
+- vehicleId must reference active Vehicle (when provided)
+- implementId must reference active Implement (when provided)
 - Day can have multiple operations (same or different types)
 - Must have at least one FieldTicketInput
 
@@ -66,7 +69,7 @@ CANCELLED CANCELLED  CANCELLED
 ```
 
 - DRAFT: created when manager adds operation to schedule — inputs defined with planned dosages
-- REVIEWED: equipment config filled (vehicle, implement, water, bar, turbine, nozzle, pressure, gear, pH), ready to print
+- REVIEWED: equipment config filled (SPRAYING: vehicle, implement, water, bar, turbine, nozzle, pressure, gear, pH; FERTIGATION: vehicle/implement optional, no spray config), ready to print
 - PRINTED: printed for operator, handed to field
 - COMPLETED: operator returned, execution data registered, stock movements created
 - CANCELLED: operation not executed, requires reason. New ticket can be created for same schedule/date.
@@ -109,10 +112,10 @@ Re-evaluation: editing COMPLETED ticket does NOT change status. Updates executio
 
 ### ReviewFieldTicket
 - **Trigger:** user fills equipment config on DRAFT ticket
-- **Input:** fieldTicketId, vehicleId, implementId, waterL, bar, turbine, nozzleCount, pressure, gearNumber, gearType, ph, operatorName (optional), input changes (add/remove/update)
-- **Rules:** ticket must be in DRAFT status; vehicleId and implementId must reference active entities
+- **Input:** fieldTicketId, vehicleId, implementId, operatorName (optional), input changes (add/remove/update); SPRAYING only: waterL, bar, turbine, nozzleCount, pressure, gearNumber, gearType, ph
+- **Rules:** ticket must be in DRAFT or PRINTED status; SPRAYING: vehicleId and implementId required, spray config fields (waterL, bar, turbine, nozzleCount, pressure, gear, pH) shown and required; FERTIGATION: vehicleId and implementId optional, spray config fields hidden and not applicable; when provided, vehicleId/implementId must reference active entities
 - **Success:** status changes to REVIEWED
-- **Errors:** FieldTicketNotFoundError, InvalidStatusTransitionError, VehicleNotFoundError, ImplementNotFoundError
+- **Errors:** FieldTicketNotFoundError, InvalidStatusTransitionError, VehicleNotFoundError, ImplementNotFoundError, MissingEquipmentForSprayingError
 - **Events emitted:** FieldTicketReviewedEvent
 
 ### EditFieldTicket
@@ -127,16 +130,16 @@ Re-evaluation: editing COMPLETED ticket does NOT change status. Updates executio
 - **Trigger:** user clicks "Imprimir" on one or more REVIEWED tickets
 - **Input:** list of fieldTicketIds
 - **Rules:** all tickets must be in REVIEWED status
-- **Success:** status changes to PRINTED, print layout generated (6 per A4 landscape)
+- **Success:** status changes to PRINTED, print layout generated (SPRAYING: 6/A4 landscape, FERTIGATION: 8/A4 landscape)
 - **Errors:** FieldTicketNotFoundError, InvalidStatusTransitionError
 - **Events emitted:** FieldTicketPrintedEvent (per ticket)
 
 ### FinalizeFieldTicket
 - **Trigger:** operator returns from field, user registers execution data
-- **Input:** fieldTicketId, startTime, endTime, hourmeterStart, hourmeterEnd, operatorName, executedInputs (inputId + executedDosage for each), plus any field changes (vehicle, implement, water, bar, turbine, nozzle, pressure, gearNumber, gearType, ph)
-- **Rules:** ticket must be in PRINTED status; stock movements created automatically per input based on executedDosage
+- **Input:** fieldTicketId, startTime, endTime, hourmeterStart (SPRAYING only), hourmeterEnd (SPRAYING only), operatorName (label: "Tratorista" for SPRAYING, "Irrigante" for FERTIGATION), executedInputs (inputId + executedDosage for each), plus any field changes (vehicle, implement, water, bar, turbine, nozzle, pressure, gearNumber, gearType, ph)
+- **Rules:** ticket must be in PRINTED status; SPRAYING: hourmeterStart and hourmeterEnd required; FERTIGATION: hourmeter not required; stock movements created automatically per input based on executedDosage
 - **Success:** status changes to COMPLETED, stock movements created
-- **Errors:** FieldTicketNotFoundError, InvalidStatusTransitionError
+- **Errors:** FieldTicketNotFoundError, InvalidStatusTransitionError, MissingHourmeterForSprayingError
 - **Events emitted:** FieldTicketCompletedEvent → triggers automatic StockMovement creation in Inventory
 
 ### ReEvaluateFieldTicket
@@ -232,16 +235,23 @@ Re-evaluation: editing COMPLETED ticket does NOT change status. Updates executio
 - Multiple tickets same day across multiple fields → each independent, no cross-ticket validation
 - Schedule deleted while DRAFT tickets exist → cascade delete DRAFT tickets
 - Schedule deleted while PRINTED/COMPLETED tickets exist → soft delete schedule, tickets preserved
-- Print layout: 6 tickets per A4 landscape
+- Print layout: SPRAYING 6/A4 landscape, FERTIGATION 8/A4 landscape
 
 ## Printing Layout
 
-6 tickets per A4 landscape page. Each ticket contains:
-- Header: operation type (e.g. "Pulverização"), field name (parcela), water (L), date, days since start
-- Equipment: vehicle code, implement code
+Layouts differ by operationType. Mixed batches render each type on separate pages.
+
+**SPRAYING — 6 tickets per A4 landscape (3×2 grid):**
+- Header: "PULVERIZAÇÃO", field name (parcela), water (L), date, days since start
+- Equipment: vehicle code (Trator), implement code
 - Inputs: list of products with dosage and unit
-- Execution fields (blank for operator): start/end time, start/end hourmeter, operator name
-- Configuration: bar (alta/baixa), turbine (com/sem), nozzle count, pressure (Bar), gear number + type (e.g. "3ª Simples"), pH
+- Configuration panel: bar (alta/baixa), turbine (com/sem), nozzle count, pressure, gear + type, pH
+- Footer execution fields (blank for operator): start/end time, start/end hourmeter, Tratorista name
+
+**FERTIGATION — 8 tickets per A4 landscape (4×2 grid):**
+- Header: "FERTIRRIGAÇÃO", field name (parcela), date, days since start
+- Inputs: list of products with dosage and unit (no equipment panel — no vehicle/implement/spray config)
+- Footer execution fields (blank for operator): start/end time, Irrigante name (no hourmeter)
 
 ## Execution Panel (Painel de Execução)
 
